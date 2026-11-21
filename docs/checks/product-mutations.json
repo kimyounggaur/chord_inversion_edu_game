@@ -1,0 +1,623 @@
+{
+  "baseline": {
+    "pass": 35,
+    "total": 35
+  },
+  "killed": 54,
+  "total": 54,
+  "rows": [
+    {
+      "id": "T01",
+      "description": "밑음을 배열의 첫 원소로 정한다",
+      "status": "KILLED",
+      "failedIds": [
+        "TH-06",
+        "TH-07",
+        "TH-08",
+        "TH-09",
+        "TH-10",
+        "TH-16",
+        "GN-01",
+        "GN-02",
+        "FL-02",
+        "FL-03",
+        "FL-08",
+        "FL-09",
+        "GN-04",
+        "FL-10",
+        "FL-11"
+      ]
+    },
+    {
+      "id": "T02",
+      "description": "자리를 가장 높은 음으로 정한다",
+      "status": "KILLED",
+      "failedIds": [
+        "TH-06",
+        "TH-09",
+        "TH-10",
+        "TH-11",
+        "GN-01",
+        "GN-02",
+        "FL-02",
+        "FL-03",
+        "FL-05",
+        "FL-08",
+        "FL-09",
+        "GN-04",
+        "FL-10",
+        "FL-11"
+      ]
+    },
+    {
+      "id": "T03",
+      "description": "올리기가 늘 근음을 옮긴다",
+      "status": "KILLED",
+      "failedIds": [
+        "TH-06",
+        "TH-07",
+        "TH-08",
+        "TH-09",
+        "TH-16",
+        "GN-01",
+        "FL-02",
+        "FL-03",
+        "GN-04",
+        "FL-10",
+        "FL-11"
+      ]
+    },
+    {
+      "id": "T04",
+      "description": "내리기가 가장 낮은 음을 옮긴다",
+      "status": "KILLED",
+      "failedIds": [
+        "TH-08",
+        "TH-16",
+        "GN-01",
+        "FL-02",
+        "FL-03",
+        "GN-04",
+        "FL-10",
+        "FL-11"
+      ]
+    },
+    {
+      "id": "T05",
+      "description": "주파수의 기준 건반을 60으로 쓴다",
+      "status": "KILLED",
+      "failedIds": [
+        "TH-02"
+      ]
+    },
+    {
+      "id": "T06",
+      "description": "장음계 공식이 틀렸다",
+      "status": "KILLED",
+      "failedIds": [
+        "TH-01",
+        "TH-03",
+        "TH-04",
+        "TH-06",
+        "TH-12",
+        "TH-13",
+        "GN-01",
+        "GN-02",
+        "FL-02",
+        "FL-03",
+        "FL-07",
+        "FL-08",
+        "FL-09",
+        "AU-01",
+        "AU-03",
+        "GN-04",
+        "FL-10",
+        "FL-11",
+        "AU-04"
+      ]
+    },
+    {
+      "id": "T07",
+      "description": "구성음의 글자를 한 칸씩 건너지 않는다",
+      "status": "KILLED",
+      "failedIds": [
+        "TH-03",
+        "TH-04",
+        "TH-06",
+        "TH-07",
+        "TH-10",
+        "TH-11",
+        "TH-12",
+        "TH-13",
+        "TH-15",
+        "TH-16",
+        "GN-01",
+        "GN-02",
+        "FL-02",
+        "FL-03",
+        "FL-04",
+        "FL-05",
+        "FL-06",
+        "FL-07",
+        "FL-08",
+        "FL-09",
+        "AU-01",
+        "AU-03",
+        "GN-04",
+        "FL-10",
+        "FL-11",
+        "AU-04"
+      ]
+    },
+    {
+      "id": "T08",
+      "description": "기호를 0~11로만 계산한다(플랫이 사라진다)",
+      "status": "KILLED",
+      "failedIds": [
+        "TH-04",
+        "GN-01",
+        "FL-02",
+        "FL-03",
+        "GN-03",
+        "FL-10",
+        "FL-11"
+      ]
+    },
+    {
+      "id": "T09",
+      "description": "기호가 오선 자리를 바꾼다",
+      "status": "KILLED",
+      "failedIds": [
+        "TH-05"
+      ]
+    },
+    {
+      "id": "T10",
+      "description": "건반 번호가 한 옥타브 낮다",
+      "status": "KILLED",
+      "failedIds": [
+        "TH-05",
+        "AU-01",
+        "AU-02",
+        "AU-03",
+        "AU-04"
+      ]
+    },
+    {
+      "id": "T11",
+      "description": "무대의 꼭대기가 B5다",
+      "status": "KILLED",
+      "failedIds": [
+        "TH-05",
+        "TH-16",
+        "FL-10"
+      ]
+    },
+    {
+      "id": "T12",
+      "description": "밀집 배치가 꼭 한 옥타브인 폭을 받는다",
+      "status": "KILLED",
+      "failedIds": [
+        "TH-13"
+      ]
+    },
+    {
+      "id": "T13",
+      "description": "심벌에서 슬래시의 좌우가 바뀐다",
+      "status": "KILLED",
+      "failedIds": [
+        "TH-06",
+        "GN-01",
+        "FL-02",
+        "FL-08",
+        "FL-09"
+      ]
+    },
+    {
+      "id": "T14",
+      "description": "화음 밖의 밑음을 자리바꿈으로 읽는다",
+      "status": "KILLED",
+      "failedIds": [
+        "TH-12"
+      ]
+    },
+    {
+      "id": "T15",
+      "description": "근음 찾기가 첫 글자를 돌려준다",
+      "status": "KILLED",
+      "failedIds": [
+        "TH-14"
+      ]
+    },
+    {
+      "id": "T16",
+      "description": "구성음의 이름이 2음, 3음, 4음이다",
+      "status": "KILLED",
+      "failedIds": [
+        "TH-03"
+      ]
+    },
+    {
+      "id": "T17",
+      "description": "딸림7화음의 공식이 장7화음과 같다",
+      "status": "KILLED",
+      "failedIds": [
+        "TH-03",
+        "GN-01",
+        "GN-02",
+        "FL-02",
+        "FL-03",
+        "GN-04",
+        "FL-10",
+        "FL-11"
+      ]
+    },
+    {
+      "id": "T18",
+      "description": "도수를 하나 적게 센다",
+      "status": "KILLED",
+      "failedIds": [
+        "TH-13"
+      ]
+    },
+    {
+      "id": "T19",
+      "description": "낮은 순서를 구성음 번호로 정한다",
+      "status": "KILLED",
+      "failedIds": [
+        "TH-06",
+        "TH-07",
+        "TH-08",
+        "TH-09",
+        "TH-10",
+        "TH-11",
+        "TH-13",
+        "TH-16",
+        "GN-01",
+        "GN-02",
+        "FL-02",
+        "FL-03",
+        "FL-06",
+        "FL-08",
+        "FL-09",
+        "AU-01",
+        "AU-03",
+        "GN-04",
+        "FL-10",
+        "FL-11",
+        "AU-04"
+      ]
+    },
+    {
+      "id": "T20",
+      "description": "한 번에 두 옥타브를 옮긴다",
+      "status": "KILLED",
+      "failedIds": [
+        "TH-06",
+        "TH-07",
+        "TH-09",
+        "TH-16",
+        "GN-01",
+        "FL-02",
+        "FL-03",
+        "GN-04",
+        "FL-10",
+        "FL-11"
+      ]
+    },
+    {
+      "id": "T21",
+      "description": "무대의 바닥 C4에 설 수 없다",
+      "status": "KILLED",
+      "failedIds": [
+        "TH-15",
+        "GN-01",
+        "FL-02",
+        "FL-03",
+        "GN-03",
+        "GN-04",
+        "FL-10",
+        "FL-11"
+      ]
+    },
+    {
+      "id": "T22",
+      "description": "첫째와 둘째 자리바꿈의 이름이 바뀌었다",
+      "status": "KILLED",
+      "failedIds": [
+        "FL-02"
+      ]
+    },
+    {
+      "id": "T23",
+      "description": "단3화음의 공식이 장3화음과 같다",
+      "status": "KILLED",
+      "failedIds": [
+        "TH-03",
+        "GN-01",
+        "GN-02",
+        "FL-02",
+        "FL-03",
+        "FL-07",
+        "FL-08",
+        "GN-04",
+        "FL-10",
+        "FL-11"
+      ]
+    },
+    {
+      "id": "T24",
+      "description": "화면의 이름에서 플랫과 샵이 바뀐다",
+      "status": "KILLED",
+      "failedIds": [
+        "TH-04",
+        "FL-02"
+      ]
+    },
+    {
+      "id": "F01",
+      "description": "근음 고르기의 답을 밑음으로 채점한다",
+      "status": "KILLED",
+      "failedIds": [
+        "FL-02",
+        "FL-03",
+        "FL-07",
+        "FL-10"
+      ]
+    },
+    {
+      "id": "F02",
+      "description": "2차 오답에 고쳐 주지 않는다",
+      "status": "KILLED",
+      "failedIds": [
+        "FL-03"
+      ]
+    },
+    {
+      "id": "F03",
+      "description": "1차 오답에 무대를 처음으로 되돌린다",
+      "status": "KILLED",
+      "failedIds": [
+        "FL-03"
+      ]
+    },
+    {
+      "id": "F04",
+      "description": "고르지 않은 확정을 채점한다",
+      "status": "KILLED",
+      "failedIds": [
+        "FL-04"
+      ]
+    },
+    {
+      "id": "F05",
+      "description": "무대 밖으로 옮긴다",
+      "status": "KILLED",
+      "failedIds": [
+        "FL-05"
+      ]
+    },
+    {
+      "id": "F06",
+      "description": "근음을 묻는 동안 구성음 이름을 보여 준다",
+      "status": "KILLED",
+      "failedIds": [
+        "FL-07"
+      ]
+    },
+    {
+      "id": "F07",
+      "description": "밑음을 묻는 동안 밑음 자리의 불을 켠다",
+      "status": "KILLED",
+      "failedIds": [
+        "FL-07"
+      ]
+    },
+    {
+      "id": "F08",
+      "description": "조사를 받침과 상관없이 붙인다",
+      "status": "KILLED",
+      "failedIds": [
+        "FL-01"
+      ]
+    },
+    {
+      "id": "F09",
+      "description": "샵과 플랫을 받침 없는 말로 본다",
+      "status": "KILLED",
+      "failedIds": [
+        "FL-01"
+      ]
+    },
+    {
+      "id": "F10",
+      "description": "틀려도 ●로 적는다",
+      "status": "KILLED",
+      "failedIds": [
+        "FL-03"
+      ]
+    },
+    {
+      "id": "F11",
+      "description": "함정 보기를 넣지 않는다",
+      "status": "KILLED",
+      "failedIds": [
+        "GN-01",
+        "FL-09",
+        "FL-10"
+      ]
+    },
+    {
+      "id": "F12",
+      "description": "이름표 수리에서 화음 이름과 밑음의 답이 바뀐다",
+      "status": "KILLED",
+      "failedIds": [
+        "FL-08"
+      ]
+    },
+    {
+      "id": "F13",
+      "description": "함정 탐정이 배치가 같은지를 본다",
+      "status": "KILLED",
+      "failedIds": [
+        "GN-02"
+      ]
+    },
+    {
+      "id": "F14",
+      "description": "듣기가 높은 음부터 울린다",
+      "status": "KILLED",
+      "failedIds": [
+        "AU-01",
+        "AU-04"
+      ]
+    },
+    {
+      "id": "F15",
+      "description": "함께 울리는 소리가 처음부터 난다",
+      "status": "KILLED",
+      "failedIds": [
+        "AU-01",
+        "AU-04"
+      ]
+    },
+    {
+      "id": "F16",
+      "description": "옮긴 음의 새 높이가 옛 높이와 같다",
+      "status": "KILLED",
+      "failedIds": [
+        "AU-02"
+      ]
+    },
+    {
+      "id": "F17",
+      "description": "윗음 치기에 밑음이 들어간다",
+      "status": "KILLED",
+      "failedIds": [
+        "AU-03"
+      ]
+    },
+    {
+      "id": "F18",
+      "description": "밑음 두기에서 밑음이 다른 층으로 가도 맞다",
+      "status": "KILLED",
+      "failedIds": [
+        "FL-05",
+        "FL-10"
+      ]
+    },
+    {
+      "id": "F19",
+      "description": "2차에 가장 멀리 돌아가는 답으로 고쳐 준다",
+      "status": "KILLED",
+      "failedIds": [
+        "FL-03"
+      ]
+    },
+    {
+      "id": "F20",
+      "description": "만들기를 처음 배치 그대로 두어도 맞다",
+      "status": "KILLED",
+      "failedIds": [
+        "FL-02",
+        "FL-03",
+        "GN-04",
+        "FL-10"
+      ]
+    },
+    {
+      "id": "F21",
+      "description": "심벌 보기에서 3화음에도 넷째 보기를 만든다",
+      "status": "KILLED",
+      "failedIds": [
+        "GN-01",
+        "FL-09",
+        "FL-10"
+      ]
+    },
+    {
+      "id": "F22",
+      "description": "맞힌 뒤에도 섞인 줄이 다시 서지 않는다",
+      "status": "KILLED",
+      "failedIds": [
+        "FL-06"
+      ]
+    },
+    {
+      "id": "S01",
+      "description": "섞인 줄의 맨 앞이 가장 낮은 음이다",
+      "status": "KILLED",
+      "failedIds": [
+        "GN-01",
+        "FL-06"
+      ]
+    },
+    {
+      "id": "S02",
+      "description": "마감 운행에 도움이 켜져 있다",
+      "status": "KILLED",
+      "failedIds": [
+        "GN-01",
+        "GN-04"
+      ]
+    },
+    {
+      "id": "S03",
+      "description": "만들기의 목표가 화음 밖의 음이다",
+      "status": "KILLED",
+      "failedIds": [
+        "GN-01",
+        "FL-02",
+        "FL-03",
+        "GN-04",
+        "FL-10",
+        "FL-11"
+      ]
+    },
+    {
+      "id": "S04",
+      "description": "처음 배치가 무대 밖이다",
+      "status": "KILLED",
+      "failedIds": [
+        "GN-01"
+      ]
+    },
+    {
+      "id": "S05",
+      "description": "이름표 수리의 이름표가 맞는 이름표다",
+      "status": "KILLED",
+      "failedIds": [
+        "GN-01",
+        "FL-08"
+      ]
+    },
+    {
+      "id": "S06",
+      "description": "만들기의 목표가 처음 자리와 같다",
+      "status": "KILLED",
+      "failedIds": [
+        "GN-01",
+        "FL-03",
+        "GN-04",
+        "FL-10"
+      ]
+    },
+    {
+      "id": "S07",
+      "description": "함정 탐정의 A와 B가 같은 배치다",
+      "status": "KILLED",
+      "failedIds": [
+        "GN-01",
+        "GN-02"
+      ]
+    },
+    {
+      "id": "S08",
+      "description": "이름표를 가린 운행을 기본 위치로 낸다",
+      "status": "KILLED",
+      "failedIds": [
+        "GN-01"
+      ]
+    }
+  ]
+}

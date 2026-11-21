@@ -1,0 +1,380 @@
+[
+  [
+    "T01",
+    "theory",
+    "밑음을 배열의 첫 원소로 정한다",
+    "const bassIx = (ch, v) => order(ch, v)[0];",
+    "const bassIx = (ch, v) => 0;"
+  ],
+  [
+    "T02",
+    "theory",
+    "자리를 가장 높은 음으로 정한다",
+    "const inversion = (ch, v) => v[bassIx(ch, v)].k;",
+    "const inversion = (ch, v) => v[topIx(ch, v)].k;"
+  ],
+  [
+    "T03",
+    "theory",
+    "올리기가 늘 근음을 옮긴다",
+    "const rideUp = (ch, v) => move(v, bassIx(ch, v), 1);",
+    "const rideUp = (ch, v) => move(v, 0, 1);"
+  ],
+  [
+    "T04",
+    "theory",
+    "내리기가 가장 낮은 음을 옮긴다",
+    "const rideDown = (ch, v) => move(v, topIx(ch, v), -1);",
+    "const rideDown = (ch, v) => move(v, bassIx(ch, v), -1);"
+  ],
+  [
+    "T05",
+    "theory",
+    "주파수의 기준 건반을 60으로 쓴다",
+    "(midi - 69) / 12",
+    "(midi - 60) / 12"
+  ],
+  [
+    "T06",
+    "theory",
+    "장음계 공식이 틀렸다",
+    "const MAJOR = [2, 2, 1, 2, 2, 2, 1];",
+    "const MAJOR = [2, 1, 2, 2, 2, 2, 1];"
+  ],
+  [
+    "T07",
+    "theory",
+    "구성음의 글자를 한 칸씩 건너지 않는다",
+    "const l = (root.l + 2 * k) % STEPS;",
+    "const l = (root.l + k) % STEPS;"
+  ],
+  [
+    "T08",
+    "theory",
+    "기호를 0~11로만 계산한다(플랫이 사라진다)",
+    "a: ((((semi - NAT[l]) % OCT) + OCT + 6) % OCT) - 6 }",
+    "a: (((semi - NAT[l]) % OCT) + OCT) % OCT }"
+  ],
+  [
+    "T09",
+    "theory",
+    "기호가 오선 자리를 바꾼다",
+    "const pos = (n) => STEPS * n.o + n.l;",
+    "const pos = (n) => STEPS * n.o + n.l + n.a;"
+  ],
+  [
+    "T10",
+    "theory",
+    "건반 번호가 한 옥타브 낮다",
+    "const midi = (n) => OCT * (n.o + 1) + NAT[n.l] + n.a;",
+    "const midi = (n) => OCT * n.o + NAT[n.l] + n.a;"
+  ],
+  [
+    "T11",
+    "theory",
+    "무대의 꼭대기가 B5다",
+    "hi: pos(note(\"C6\")) };",
+    "hi: pos(note(\"B5\")) };"
+  ],
+  [
+    "T12",
+    "theory",
+    "밀집 배치가 꼭 한 옥타브인 폭을 받는다",
+    "const isClose = (ch, v) => span(ch, v) < OCT;",
+    "const isClose = (ch, v) => span(ch, v) <= OCT;"
+  ],
+  [
+    "T13",
+    "theory",
+    "심벌에서 슬래시의 좌우가 바뀐다",
+    "const symOfInv = (ch, k) => ch.sym + (k ? \"/\" + pcName(ch.tones[k]) : \"\");",
+    "const symOfInv = (ch, k) => (k ? pcName(ch.tones[k]) + \"/\" : \"\") + ch.sym;"
+  ],
+  [
+    "T14",
+    "theory",
+    "화음 밖의 밑음을 자리바꿈으로 읽는다",
+    "kind: k < 0 ? \"outside\" : k ? \"inversion\" : \"root\" };",
+    "kind: k ? \"inversion\" : \"root\" };"
+  ],
+  [
+    "T15",
+    "theory",
+    "근음 찾기가 첫 글자를 돌려준다",
+    "return set.find((r) => set.every((l) => { const d = (l - r + STEPS) % STEPS; return d % 2 === 0 && d / 2 < set.length; }));",
+    "return set[0];"
+  ],
+  [
+    "T16",
+    "theory",
+    "구성음의 이름이 2음, 3음, 4음이다",
+    "const degKo = (k) => (k ? 2 * k + 1 + \"음\" : \"근음\");",
+    "const degKo = (k) => (k ? k + 1 + \"음\" : \"근음\");"
+  ],
+  [
+    "T17",
+    "theory",
+    "딸림7화음의 공식이 장7화음과 같다",
+    "7: { stack: \"Mmm\", ko: \"딸림7화음\" }",
+    "7: { stack: \"MmM\", ko: \"딸림7화음\" }"
+  ],
+  [
+    "T18",
+    "theory",
+    "도수를 하나 적게 센다",
+    "posAt(ch, v[i]) - posAt(ch, v[o[j]]) + 1); };",
+    "posAt(ch, v[i]) - posAt(ch, v[o[j]])); };"
+  ],
+  [
+    "T19",
+    "theory",
+    "낮은 순서를 구성음 번호로 정한다",
+    "sort((i, j) => midiAt(ch, v[i]) - midiAt(ch, v[j]));",
+    "sort((i, j) => v[i].k - v[j].k);"
+  ],
+  [
+    "T20",
+    "theory",
+    "한 번에 두 옥타브를 옮긴다",
+    "(j === i ? { k: x.k, o: x.o + d } : x));",
+    "(j === i ? { k: x.k, o: x.o + 2 * d } : x));"
+  ],
+  [
+    "T21",
+    "theory",
+    "무대의 바닥 C4에 설 수 없다",
+    "posAt(ch, x) >= f.lo &&",
+    "posAt(ch, x) > f.lo &&"
+  ],
+  [
+    "T22",
+    "theory",
+    "첫째와 둘째 자리바꿈의 이름이 바뀌었다",
+    "const INV_KO = [\"기본 위치\", \"첫째 자리바꿈\", \"둘째 자리바꿈\", \"셋째 자리바꿈\"];",
+    "const INV_KO = [\"기본 위치\", \"둘째 자리바꿈\", \"첫째 자리바꿈\", \"셋째 자리바꿈\"];"
+  ],
+  [
+    "T23",
+    "theory",
+    "단3화음의 공식이 장3화음과 같다",
+    "m: { stack: \"mM\", ko: \"단3화음\" }",
+    "m: { stack: \"Mm\", ko: \"단3화음\" }"
+  ],
+  [
+    "T24",
+    "theory",
+    "화면의 이름에서 플랫과 샵이 바뀐다",
+    "const ACC_TXT = [\"𝄫\", \"♭\", \"\", \"♯\", \"𝄪\"]",
+    "const ACC_TXT = [\"𝄫\", \"♯\", \"\", \"♭\", \"𝄪\"]"
+  ],
+  [
+    "F01",
+    "flow",
+    "근음 고르기의 답을 밑음으로 채점한다",
+    "if (st.kind === \"pick\") return s.sel === (st.want === \"root\" ? 0 : inversion(m.ch, s.v));",
+    "if (st.kind === \"pick\") return s.sel === inversion(m.ch, s.v);"
+  ],
+  [
+    "F02",
+    "flow",
+    "2차 오답에 고쳐 주지 않는다",
+    "if (s.tries === 0 || st.kind === \"judge\") {",
+    "if (true) {"
+  ],
+  [
+    "F03",
+    "flow",
+    "1차 오답에 무대를 처음으로 되돌린다",
+    "return Object.assign({ tries: 1, assisted: true, msg: say(\"bad\", text, code) },",
+    "return Object.assign({ tries: 1, assisted: true, v: m.v0, msg: say(\"bad\", text, code) },"
+  ],
+  [
+    "F04",
+    "flow",
+    "고르지 않은 확정을 채점한다",
+    "if (st.kind === \"pick\" && s.sel === null) return { msg: say(\"warn\", \"먼저 음을 골라 주세요.\", \"empty\") };",
+    ""
+  ],
+  [
+    "F05",
+    "flow",
+    "무대 밖으로 옮긴다",
+    "if (!inFrame(ch, w)) return { msg:",
+    "if (false) return { msg:"
+  ],
+  [
+    "F06",
+    "flow",
+    "근음을 묻는 동안 구성음 이름을 보여 준다",
+    "roles: !m.plain && (L || (m.roles && !askRoot)),",
+    "roles: !m.plain && (L || m.roles),"
+  ],
+  [
+    "F07",
+    "flow",
+    "밑음을 묻는 동안 밑음 자리의 불을 켠다",
+    "lamp: L || (sorted && !askBass && (askRoot || st.kind === \"judge\" ? m.help : true)),",
+    "lamp: L || sorted,"
+  ],
+  [
+    "F08",
+    "flow",
+    "조사를 받침과 상관없이 붙인다",
+    "const josa = (w, pair) => w + pair.split(\"/\")[batchim(w) ? 0 : 1];",
+    "const josa = (w, pair) => w + pair.split(\"/\")[1];"
+  ],
+  [
+    "F09",
+    "flow",
+    "샵과 플랫을 받침 없는 말로 본다",
+    "return ACC_TXT.includes(c) && c ? 1 : 0;",
+    "return 0;"
+  ],
+  [
+    "F10",
+    "flow",
+    "틀려도 ●로 적는다",
+    "result: (s) => (s.assisted ? \"half\" : \"full\"),",
+    "result: (s) => \"full\","
+  ],
+  [
+    "F11",
+    "flow",
+    "함정 보기를 넣지 않는다",
+    "if (job.by === \"sym\" && job.trap && t) cs =",
+    "if (false) cs ="
+  ],
+  [
+    "F12",
+    "flow",
+    "이름표 수리에서 화음 이름과 밑음의 답이 바뀐다",
+    "answer: okCh ? 1 : okBass ? 0 : 2 });",
+    "answer: okCh ? 0 : okBass ? 1 : 2 });"
+  ],
+  [
+    "F13",
+    "flow",
+    "함정 탐정이 배치가 같은지를 본다",
+    "answer: inversion(ch, v0) === inversion(ch, m.vb) ? 0 : 1 });",
+    "answer: sameV(v0, m.vb) ? 0 : 1 });"
+  ],
+  [
+    "F14",
+    "flow",
+    "듣기가 높은 음부터 울린다",
+    "o.forEach((i, r) => ev.push({ at: r * STEP_S, dur: STEP_S * 0.92,",
+    "o.forEach((i, r) => ev.push({ at: (n - 1 - r) * STEP_S, dur: STEP_S * 0.92,"
+  ],
+  [
+    "F15",
+    "flow",
+    "함께 울리는 소리가 처음부터 난다",
+    "o.forEach((i) => ev.push({ at: n * STEP_S + 0.1, dur: TOGETHER_S,",
+    "o.forEach((i) => ev.push({ at: 0, dur: TOGETHER_S,"
+  ],
+  [
+    "F16",
+    "flow",
+    "옮긴 음의 새 높이가 옛 높이와 같다",
+    "o: last.to }), k: last.k, peak: 0.3 }];",
+    "o: last.from }), k: last.k, peak: 0.3 }];"
+  ],
+  [
+    "F17",
+    "flow",
+    "윗음 치기에 밑음이 들어간다",
+    "pick = upper ? o.slice(1) : o.slice(0, 1);",
+    "pick = upper ? o.slice(0) : o.slice(0, 1);"
+  ],
+  [
+    "F18",
+    "flow",
+    "밑음 두기에서 밑음이 다른 층으로 가도 맞다",
+    "return inversion(m.ch, v) === b && v[b].o === m.v0[b].o && !sameV(v, m.v0); };",
+    "return inversion(m.ch, v) === b && !sameV(v, m.v0); };"
+  ],
+  [
+    "F19",
+    "flow",
+    "2차에 가장 멀리 돌아가는 답으로 고쳐 준다",
+    "return pool.sort((a, b) => a.d - b.d)[0].v;",
+    "return pool.sort((a, b) => b.d - a.d)[0].v;"
+  ],
+  [
+    "F20",
+    "flow",
+    "만들기를 처음 배치 그대로 두어도 맞다",
+    "return m.target.keep ? kept(m, s.v) : inversion(m.ch, s.v) === m.target.k;",
+    "return m.target.keep ? kept(m, s.v) : true;"
+  ],
+  [
+    "F21",
+    "flow",
+    "심벌 보기에서 3화음에도 넷째 보기를 만든다",
+    "let cs = ch.tones.map((_, k) => ({ label: job.by === \"sym\" ? symOfInv(ch, k) : INV_SHORT[k], tag: \"inv\", k }));",
+    "let cs = [0, 1, 2, 3].map((k) => ({ label: job.by === \"sym\" ? ch.sym + \"/\" + k : INV_SHORT[k], tag: \"inv\", k }));"
+  ],
+  [
+    "F22",
+    "flow",
+    "맞힌 뒤에도 섞인 줄이 다시 서지 않는다",
+    "tries: 0, off: [], fixed: false, sorted: true, moved: 0,",
+    "tries: 0, off: [], fixed: false, moved: 0,"
+  ],
+  [
+    "S01",
+    "seeds",
+    "섞인 줄의 맨 앞이 가장 낮은 음이다",
+    "row: \"G4 C5 E4\", plain: true },\n    { id: \"d0-04\"",
+    "row: \"E4 G4 C5\", plain: true },\n    { id: \"d0-04\""
+  ],
+  [
+    "S02",
+    "seeds",
+    "마감 운행에 도움이 켜져 있다",
+    "to: { bass: \"G\" }, plain: true, final: true },",
+    "to: { bass: \"G\" }, plain: true, help: true, final: true },"
+  ],
+  [
+    "S03",
+    "seeds",
+    "만들기의 목표가 화음 밖의 음이다",
+    "{ id: \"d5-02\", ask: \"make\", chord: \"C\", from: \"C4 E4 G4\", to: { sym: \"C/G\" } },",
+    "{ id: \"d5-02\", ask: \"make\", chord: \"C\", from: \"C4 E4 G4\", to: { sym: \"C/D\" } },"
+  ],
+  [
+    "S04",
+    "seeds",
+    "처음 배치가 무대 밖이다",
+    "{ id: \"d1-04\", ask: \"both\", chord: \"F\", from: \"F4 A4 C5\" },",
+    "{ id: \"d1-04\", ask: \"both\", chord: \"F\", from: \"F3 A3 C4\" },"
+  ],
+  [
+    "S05",
+    "seeds",
+    "이름표 수리의 이름표가 맞는 이름표다",
+    "{ id: \"d7-01\", ask: \"fix\", chord: \"Am\", from: \"C4 E4 A4\", label: \"Am/E\", help: true },",
+    "{ id: \"d7-01\", ask: \"fix\", chord: \"Am\", from: \"C4 E4 A4\", label: \"Am/C\", help: true },"
+  ],
+  [
+    "S06",
+    "seeds",
+    "만들기의 목표가 처음 자리와 같다",
+    "{ id: \"d2-04\", ask: \"make\", chord: \"C\", from: \"G4 C5 E5\", to: { inv: 0 } },",
+    "{ id: \"d2-04\", ask: \"make\", chord: \"C\", from: \"G4 C5 E5\", to: { inv: 2 } },"
+  ],
+  [
+    "S07",
+    "seeds",
+    "함정 탐정의 A와 B가 같은 배치다",
+    "{ id: \"d6-02\", ask: \"same\", chord: \"C\", from: \"C4 E4 G4\", b: \"E4 G4 C5\" },",
+    "{ id: \"d6-02\", ask: \"same\", chord: \"C\", from: \"C4 E4 G4\", b: \"C4 E4 G4\" },"
+  ],
+  [
+    "S08",
+    "seeds",
+    "이름표를 가린 운행을 기본 위치로 낸다",
+    "{ id: \"d7-02\", ask: \"root\", chord: \"F\", from: \"A4 C5 F5\", blind: true, help: true },",
+    "{ id: \"d7-02\", ask: \"root\", chord: \"F\", from: \"F4 A4 C5\", blind: true, help: true },"
+  ]
+]

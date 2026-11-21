@@ -1,0 +1,62 @@
+{
+  "date": "2026-11-21T09:40:30.040Z",
+  "environment": "Node v24.22.3",
+  "scope": "production state and storage, isolated VM with UI renderer stub",
+  "checks": [
+    {
+      "name": "Developer spike cannot change or invalidate existing learning save",
+      "status": "PASS",
+      "observed": {
+        "spikeRuns": 10,
+        "savedBytesUnchanged": true,
+        "preexistingBest": 7
+      }
+    },
+    {
+      "name": "Review position survives reload and completion remains 6/7",
+      "status": "PASS",
+      "observed": {
+        "reviewRestored": true,
+        "firstPassFull": 6,
+        "denominator": 7,
+        "completedJobs": 7,
+        "completedDays": 1
+      }
+    },
+    {
+      "name": "Lab chord identity changes with quality and cancels preceding audio",
+      "status": "PASS",
+      "observed": {
+        "initialId": "lab-C",
+        "seventhId": "lab-CM7",
+        "tokenCounts": [
+          3,
+          4,
+          3
+        ],
+        "oldAudioCancelled": true
+      }
+    },
+    {
+      "name": "Lab interaction leaves original active session and records unchanged",
+      "status": "PASS",
+      "observed": {
+        "savedBytesUnchanged": true,
+        "resumedRun": "d0-01"
+      }
+    },
+    {
+      "name": "All eight days preserve 63 original results and grant twelve cards",
+      "status": "PASS",
+      "observed": {
+        "days": 8,
+        "originalJobs": 63,
+        "full": 63,
+        "cards": 12,
+        "scenes": 8
+      }
+    }
+  ],
+  "pass": 5,
+  "total": 5
+}

@@ -1,0 +1,13 @@
+{
+  "started": "2026-11-21T09:30:32.631Z", "finished": "2026-11-21T09:30:38.718Z",
+  "browser": "Cloud Chrome, product preview", "pass": true,
+  "pageTests": {"pass": 46, "total": 46},
+  "answerPaths": {"pass": 126, "total": 126, "method": "development hash entry and actual rendered button clicks, correct and forced correction"},
+  "initialLayouts": {"pass": 504, "total": 504, "method": "openJob fixture entry in isolated srcdoc"},
+  "viewports": [[320,545],[320,568],[360,600],[360,640],[390,664],[390,844],[430,932],[800,600]],
+  "normalProgression": {"pass": 63, "total": 63, "days": 8, "method": "title, map, buttons, scenes, close, next unlocked day", "muted": true, "padPresses": 0},
+  "actualButtonClicks": 761, "lab": {"pass": true, "recordUnchanged": true}, "failures": [], "pageErrors": [],
+  "keyboard": {"pass": 63, "total": 63, "method": "Cloud browser native Enter and ArrowUp/ArrowDown on controls using independently prepared paths", "scope": "each of 63 development hash entries", "tabCheck": "d1-3 visible tokens, choices, hear, confirm reached in DOM order"},
+  "additionalUi": ["C triad to C#M7 shows C# E# G# B# and visible nameplate", "alternative terms show C/E. 근음 C, 베이스 E. 제1전위예요."],
+  "realDevices": "NOT_RUN", "listeningQuality": "NOT_RUN", "teacherReview": "NOT_RUN", "learnerReview": "NOT_RUN"
+}

@@ -1,0 +1,110 @@
+:root {
+  --bg: #e9eef2; --panel: #ffffff; --line: #c7d2da; --ink: #1a2630; --ink-2: #4b5b68;
+  --steel: #17627e; --steel-soft: #dcedf4; --good: #256f43; --warn: #8f5000; --bad: #ab3626;
+  --r0: #ffd35c; --r0-edge: #8a5a00; --r1: #bfe3f2; --r1-edge: #17627e; --r2: #cdeccf; --r2-edge: #256f43; --r3: #e3d3f4; --r3-edge: #6a3fa0;
+  --plainTok: #eef1f4; --lamp: #fff3c4; --cardH: 56px;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; background: var(--bg); color: var(--ink);
+  overscroll-behavior: none; -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; word-break: keep-all; overflow: hidden; }
+button { font: inherit; color: inherit; margin: 0; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+button:focus-visible { outline: 3px solid #0b4f8a; outline-offset: 2px; }
+[hidden] { display: none !important; }
+
+/* 틀: 다섯 줄. 무대만 늘어난다 */
+#app { position: relative; height: 100vh; height: 100dvh; max-width: 720px; margin: 0 auto; display: grid; grid-template-rows: 44px var(--cardH) minmax(0, 380px) 40px 104px; align-content: space-between; gap: 6px;
+  padding: calc(6px + env(safe-area-inset-top, 0px)) calc(8px + env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) calc(8px + env(safe-area-inset-left, 0px)); }
+#app.narrow { --cardH: 50px; }
+
+/* HUD */
+#hud { display: flex; align-items: center; gap: 8px; min-width: 0; }
+#dayName { flex: 1 1 auto; min-width: 0; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#dots { flex: 0 0 auto; display: flex; gap: 4px; align-items: center; }
+#dots i { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--ink-2); background: transparent; }
+#dots i.full { background: var(--ink); border-color: var(--ink); }
+#dots i.half { background: linear-gradient(90deg, var(--ink) 50%, transparent 50%); border-color: var(--ink); }
+#dots i.now { border-color: var(--steel); box-shadow: 0 0 0 2px var(--steel-soft); }
+#soundChip { flex: 0 0 auto; height: 44px; padding: 0 12px; border-radius: 22px; border: 2px solid var(--warn); background: #fff7e8; color: var(--warn); font-size: 13px; font-weight: 700; }
+#hud.nosound #dayName { display: none; }
+#hud.nosound #dots { flex: 1 1 auto; }
+
+/* 운행 카드 */
+#card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 0 8px 0 10px; min-width: 0; }
+#askTag { font-size: 12px; font-weight: 700; color: var(--steel); background: var(--steel-soft); border-radius: 8px; padding: 4px 6px; white-space: nowrap; }
+#askText { margin: 0; font-size: 15px; line-height: 1.3; font-weight: 600; max-height: 2.6em; overflow: hidden; }
+#app.narrow #askText { font-size: 14px; }
+#plate { min-width: 58px; max-width: 96px; height: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid var(--ink); border-radius: 8px; padding: 0 6px; background: #fbfcfd; }
+#plate.none { visibility: hidden; }
+#plate.is-bad { border-color: var(--bad); border-style: dashed; color: var(--bad); }
+#plateName { font-size: 16px; line-height: 1.1; white-space: nowrap; }
+#plateSub { font-size: 12px; line-height: 1.1; color: var(--ink-2); white-space: nowrap; }
+#plate.is-bad #plateSub { color: var(--bad); }
+
+/* 무대: 오선(층) 위에 음이 높이대로 선다 */
+#stage { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; min-height: 0; }
+#bg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
+.staffline { stroke: #7d8c98; stroke-width: 1.4; }
+.ledger { stroke: #7d8c98; stroke-width: 1.4; }
+.divider { stroke: var(--line); stroke-width: 1.2; }
+.clef { fill: none; stroke: var(--ink); stroke-linecap: round; stroke-linejoin: round; }
+.clefdot { fill: var(--ink); }
+.head { stroke: var(--ink); stroke-width: 1.6; }
+.beam { fill: var(--lamp); }
+.esc .band { stroke: #17627e; stroke-opacity: .1; stroke-width: 12; stroke-linecap: round; }
+.esc .rail { stroke: #17627e; stroke-opacity: .55; stroke-width: 1.6; stroke-dasharray: 5 4; }
+.esc .tip { fill: #17627e; fill-opacity: .6; }
+.esc.down .band { stroke: #8f5000; stroke-opacity: .08; }
+.esc.down .rail { stroke: #8f5000; stroke-opacity: .5; }
+.esc.down .tip { fill: #8f5000; fill-opacity: .55; }
+.gap text { font-size: 12px; font-weight: 700; fill: var(--ink); text-anchor: middle; }
+.gap rect { fill: #fff; stroke: var(--ink-2); stroke-width: 1; }
+.wkey { fill: #fff; stroke: #8b99a5; stroke-width: 1; }
+.bkey { fill: #26323c; }
+.keymark { font-size: 12px; font-weight: 800; fill: var(--ink); text-anchor: middle; }
+#tokens { position: absolute; inset: 0; }
+.tok { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 0; border: 2.5px solid var(--ink-2); border-radius: 50%; background: var(--plainTok);
+  transition: transform .42s cubic-bezier(.3, .7, .3, 1), box-shadow .15s; will-change: transform; }
+.tok b { font-size: 17px; line-height: 1; }
+.tok small { font-size: 12px; line-height: 1; font-weight: 700; }
+.tok.r0 { background: var(--r0); border-color: var(--r0-edge); border-radius: 9px; }
+.tok.r1 { background: var(--r1); border-color: var(--r1-edge); }
+.tok.r2 { background: var(--r2); border-color: var(--r2-edge); }
+.tok.r3 { background: var(--r3); border-color: var(--r3-edge); }
+.tok.is-sel { box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--steel); z-index: 2; }
+.tok.is-off { opacity: .5; text-decoration: line-through; }
+.tok.is-on { box-shadow: 0 0 0 3px #fff, 0 0 0 7px #e0a100; z-index: 3; }
+.tok:disabled { cursor: default; }
+#lamp { position: absolute; left: 0; top: 0; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; border-radius: 9px; border: 1.5px solid var(--ink-2); background: #f3f5f7; color: var(--ink-2); white-space: nowrap; padding: 0 6px; transition: transform .3s; }
+#lamp.is-lit { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+/* 판독 줄 */
+#readout { margin: 0; padding: 0 4px; font-size: 13.5px; line-height: 1.35; display: flex; align-items: center; overflow: hidden; }
+#readout.good { color: var(--good); font-weight: 600; }
+#readout.warn { color: var(--warn); font-weight: 600; }
+#readout.bad { color: var(--bad); font-weight: 600; }
+
+/* 조작부: 높이 104px 고정. 묶음은 미리 두고 숨긴다 */
+#controls { display: grid; grid-template-rows: 48px 52px; gap: 4px; min-width: 0; }
+#rowA, #rowB { display: flex; gap: 4px; min-width: 0; }
+#chips { flex: 1 1 auto; display: flex; gap: 4px; min-width: 0; }
+#controls button { border: 2px solid var(--ink-2); border-radius: 12px; background: var(--panel); font-size: 14px; font-weight: 700; min-width: 44px; padding: 0 4px; display: flex; align-items: center; justify-content: center; gap: 4px; white-space: nowrap; }
+#controls button svg { width: 14px; height: 14px; fill: currentColor; flex: 0 0 auto; }
+.chip, .ride, .pad { flex: 1 1 0; }
+.seg { flex: 0 0 48px; }
+.mini { flex: 0 0 52px; }
+#btnHear { flex: 0 0 92px; }
+#controls button.main, #close button.main { flex: 1 1 auto; background: var(--steel); border-color: var(--steel); color: #fff; font-size: 16px; }
+#controls button.is-sel { background: var(--steel-soft); border-color: var(--steel); box-shadow: inset 0 0 0 2px var(--steel); }
+#controls button.is-off { opacity: .45; text-decoration: line-through; }
+#controls button:disabled { cursor: default; }
+#controls button.ride:disabled { opacity: .45; }
+
+/* 마감 */
+#close { position: absolute; left: 8px; right: 8px; top: 56px; bottom: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 8px; overflow: auto; }
+#close h1 { margin: 0; font-size: 18px; }
+#close p { margin: 0; font-size: 14px; line-height: 1.4; }
+#closeList { margin: 0; padding: 0 0 0 22px; font-size: 14px; line-height: 1.7; flex: 1 1 auto; }
+#closeTest { color: var(--ink-2); font-size: 12px !important; }
+#close button.main { flex: 0 0 52px; border: 2px solid var(--steel); border-radius: 12px; font-weight: 700; }
+@media (prefers-reduced-motion: reduce) { .tok, #lamp { transition: none; } }
