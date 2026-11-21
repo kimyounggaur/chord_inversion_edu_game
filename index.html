@@ -1,0 +1,2150 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2317627e'/%3E%3Cpath d='M6 24h7v-7h7v-7h6' fill='none' stroke='white' stroke-width='3'/%3E%3C/svg%3E">
+<meta name="description" content="음을 한 옥타브씩 옮기며 근음, 밑음, 자리바꿈을 배우는 음악이론 게임">
+<title>화음 에스컬레이터</title>
+<style>
+:root {
+  --bg: #e9eef2; --panel: #ffffff; --line: #c7d2da; --ink: #1a2630; --ink-2: #4b5b68;
+  --steel: #17627e; --steel-soft: #dcedf4; --good: #256f43; --warn: #8f5000; --bad: #ab3626;
+  --r0: #ffd35c; --r0-edge: #8a5a00; --r1: #bfe3f2; --r1-edge: #17627e; --r2: #cdeccf; --r2-edge: #256f43; --r3: #e3d3f4; --r3-edge: #6a3fa0;
+  --plainTok: #eef1f4; --lamp: #fff3c4; --cardH: 56px;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; background: var(--bg); color: var(--ink);
+  overscroll-behavior: none; -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; word-break: keep-all; overflow: hidden; }
+button { font: inherit; color: inherit; margin: 0; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+button:focus-visible { outline: 3px solid #0b4f8a; outline-offset: 2px; }
+[hidden] { display: none !important; }
+
+/* 틀: 다섯 줄. 무대만 늘어난다 */
+#app { position: relative; height: 100vh; height: 100dvh; max-width: 720px; margin: 0 auto; display: grid; grid-template-rows: 44px var(--cardH) minmax(0, 380px) 40px 104px; align-content: space-between; gap: 6px;
+  padding: calc(6px + env(safe-area-inset-top, 0px)) calc(8px + env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) calc(8px + env(safe-area-inset-left, 0px)); }
+#app.narrow { --cardH: 50px; }
+
+/* HUD */
+#hud { display: flex; align-items: center; gap: 8px; min-width: 0; }
+#dayName { flex: 1 1 auto; min-width: 0; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#dots { flex: 0 0 auto; display: flex; gap: 4px; align-items: center; }
+#dots i { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--ink-2); background: transparent; }
+#dots i.full { background: var(--ink); border-color: var(--ink); }
+#dots i.half { background: linear-gradient(90deg, var(--ink) 50%, transparent 50%); border-color: var(--ink); }
+#dots i.now { border-color: var(--steel); box-shadow: 0 0 0 2px var(--steel-soft); }
+#soundChip { flex: 0 0 auto; height: 44px; padding: 0 12px; border-radius: 22px; border: 2px solid var(--warn); background: #fff7e8; color: var(--warn); font-size: 13px; font-weight: 700; }
+#hud.nosound #dayName { display: none; }
+#hud.nosound #dots { flex: 1 1 auto; }
+
+/* 운행 카드 */
+#card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 0 8px 0 10px; min-width: 0; }
+#askTag { font-size: 12px; font-weight: 700; color: var(--steel); background: var(--steel-soft); border-radius: 8px; padding: 4px 6px; white-space: nowrap; }
+#askText { margin: 0; font-size: 15px; line-height: 1.3; font-weight: 600; max-height: 2.6em; overflow: hidden; }
+#app.narrow #askText { font-size: 14px; }
+#plate { min-width: 58px; max-width: 96px; height: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid var(--ink); border-radius: 8px; padding: 0 6px; background: #fbfcfd; }
+#plate.none { visibility: hidden; }
+#plate.is-bad { border-color: var(--bad); border-style: dashed; color: var(--bad); }
+#plateName { font-size: 16px; line-height: 1.1; white-space: nowrap; }
+#plateSub { font-size: 12px; line-height: 1.1; color: var(--ink-2); white-space: nowrap; }
+#plate.is-bad #plateSub { color: var(--bad); }
+
+/* 무대: 오선(층) 위에 음이 높이대로 선다 */
+#stage { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; min-height: 0; }
+#bg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
+.staffline { stroke: #7d8c98; stroke-width: 1.4; }
+.ledger { stroke: #7d8c98; stroke-width: 1.4; }
+.divider { stroke: var(--line); stroke-width: 1.2; }
+.clef { fill: none; stroke: var(--ink); stroke-linecap: round; stroke-linejoin: round; }
+.clefdot { fill: var(--ink); }
+.head { stroke: var(--ink); stroke-width: 1.6; }
+.beam { fill: var(--lamp); }
+.esc .band { stroke: #17627e; stroke-opacity: .1; stroke-width: 12; stroke-linecap: round; }
+.esc .rail { stroke: #17627e; stroke-opacity: .55; stroke-width: 1.6; stroke-dasharray: 5 4; }
+.esc .tip { fill: #17627e; fill-opacity: .6; }
+.esc.down .band { stroke: #8f5000; stroke-opacity: .08; }
+.esc.down .rail { stroke: #8f5000; stroke-opacity: .5; }
+.esc.down .tip { fill: #8f5000; fill-opacity: .55; }
+.gap text { font-size: 12px; font-weight: 700; fill: var(--ink); text-anchor: middle; }
+.gap rect { fill: #fff; stroke: var(--ink-2); stroke-width: 1; }
+.wkey { fill: #fff; stroke: #8b99a5; stroke-width: 1; }
+.bkey { fill: #26323c; }
+.keymark { font-size: 12px; font-weight: 800; fill: var(--ink); text-anchor: middle; }
+#tokens { position: absolute; inset: 0; }
+.tok { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 0; border: 2.5px solid var(--ink-2); border-radius: 50%; background: var(--plainTok);
+  transition: transform .42s cubic-bezier(.3, .7, .3, 1), box-shadow .15s; will-change: transform; }
+.tok b { font-size: 17px; line-height: 1; }
+.tok small { font-size: 12px; line-height: 1; font-weight: 700; }
+.tok.r0 { background: var(--r0); border-color: var(--r0-edge); border-radius: 9px; }
+.tok.r1 { background: var(--r1); border-color: var(--r1-edge); }
+.tok.r2 { background: var(--r2); border-color: var(--r2-edge); }
+.tok.r3 { background: var(--r3); border-color: var(--r3-edge); }
+.tok.is-sel { box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--steel); z-index: 2; }
+.tok.is-off { opacity: .5; text-decoration: line-through; }
+.tok.is-on { box-shadow: 0 0 0 3px #fff, 0 0 0 7px #e0a100; z-index: 3; }
+.tok:disabled { cursor: default; }
+#lamp { position: absolute; left: 0; top: 0; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; border-radius: 9px; border: 1.5px solid var(--ink-2); background: #f3f5f7; color: var(--ink-2); white-space: nowrap; padding: 0 6px; transition: transform .3s; }
+#lamp.is-lit { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+/* 판독 줄 */
+#readout { margin: 0; padding: 0 4px; font-size: 13.5px; line-height: 1.35; display: flex; align-items: center; overflow: hidden; }
+#readout.good { color: var(--good); font-weight: 600; }
+#readout.warn { color: var(--warn); font-weight: 600; }
+#readout.bad { color: var(--bad); font-weight: 600; }
+
+/* 조작부: 높이 104px 고정. 묶음은 미리 두고 숨긴다 */
+#controls { display: grid; grid-template-rows: 48px 52px; gap: 4px; min-width: 0; }
+#rowA, #rowB { display: flex; gap: 4px; min-width: 0; }
+#chips { flex: 1 1 auto; display: flex; gap: 4px; min-width: 0; }
+#controls button { border: 2px solid var(--ink-2); border-radius: 12px; background: var(--panel); font-size: 14px; font-weight: 700; min-width: 44px; padding: 0 4px; display: flex; align-items: center; justify-content: center; gap: 4px; white-space: nowrap; }
+#controls button svg { width: 14px; height: 14px; fill: currentColor; flex: 0 0 auto; }
+.chip, .ride, .pad { flex: 1 1 0; }
+.seg { flex: 0 0 48px; }
+.mini { flex: 0 0 52px; }
+#btnHear { flex: 0 0 92px; }
+#controls button.main, #close button.main { flex: 1 1 auto; background: var(--steel); border-color: var(--steel); color: #fff; font-size: 16px; }
+#controls button.is-sel { background: var(--steel-soft); border-color: var(--steel); box-shadow: inset 0 0 0 2px var(--steel); }
+#controls button.is-off { opacity: .45; text-decoration: line-through; }
+#controls button:disabled { cursor: default; }
+#controls button.ride:disabled { opacity: .45; }
+
+/* 마감 */
+#close { position: absolute; left: 8px; right: 8px; top: 56px; bottom: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 8px; overflow: auto; }
+#close h1 { margin: 0; font-size: 18px; }
+#close p { margin: 0; font-size: 14px; line-height: 1.4; }
+#closeList { margin: 0; padding: 0 0 0 22px; font-size: 14px; line-height: 1.7; flex: 1 1 auto; }
+#closeTest { color: var(--ink-2); font-size: 12px !important; }
+#close button.main { flex: 0 0 52px; border: 2px solid var(--steel); border-radius: 12px; font-weight: 700; }
+@media (prefers-reduced-motion: reduce) { .tok, #lamp { transition: none; } }
+
+/* The five-row geometry stays shared by every run. */
+#homeBtn { width:44px; height:44px; flex:0 0 44px; display:grid; place-items:center; border:0; border-radius:14px; background:var(--panel); color:var(--steel); }
+#homeBtn svg { width:21px; height:21px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+#hud { gap:6px; }
+#card { box-shadow:0 2px 0 #dce4e9; }
+#stage { border-color:#b7c7d1; box-shadow:inset 0 1px 0 #fff,0 2px 0 #dce4e9; }
+#plate { background:linear-gradient(160deg,#fff,#edf3f6); border-width:1.5px; box-shadow:0 2px 0 #c7d2da; }
+#plate.is-bad { background:#fff5f1; }
+#askTag { background:transparent; padding:4px 0; }
+.tok { box-shadow:0 3px 0 #bcc8d0; border-width:2px; transition:transform .42s cubic-bezier(.3,.7,.3,1),opacity .15s; }
+.tok.r0 { box-shadow:0 3px 0 #c99e36,inset 0 2px 0 #fff0bd; border-radius:8px; }
+.tok.r1 { box-shadow:0 3px 0 #87b9cd,inset 0 2px 0 #e2f5fc; }
+.tok.r2 { box-shadow:0 3px 0 #9dc6a1,inset 0 2px 0 #e8f7e9; }
+.tok.r3 { box-shadow:0 3px 0 #bea5d6,inset 0 2px 0 #f0e5fa; }
+.tok.is-sel { box-shadow:0 0 0 3px #fff,0 0 0 6px var(--steel); }
+.tok.is-on { box-shadow:0 0 0 3px #fff,0 0 0 7px #b88700; }
+.tok.is-off { opacity:.65; }
+.tok b { display:inline-flex; align-items:center; justify-content:center; }
+.esc .steps { fill:none; stroke:#17627e; stroke-opacity:.55; stroke-width:1.4; stroke-linecap:round; stroke-linejoin:round; }
+.esc.down .steps { stroke:#8f5000; }
+.esc .rail { stroke-dasharray:none; stroke-width:1.6; }
+.esc .band { stroke-width:15; }
+.staffline { stroke:#8495a2; }
+#lamp.is-lit { box-shadow:0 0 0 3px var(--lamp); }
+#controls button { box-shadow:0 2px 0 #c7d2da; border-width:1.5px; border-radius:10px; }
+#controls button:active { box-shadow:inset 0 2px 2px #d0dce3; }
+#controls button.main { box-shadow:0 3px 0 #0d455b; }
+#controls button.is-sel { box-shadow:inset 0 0 0 2px var(--steel); }
+#readout { border-radius:8px; }
+#readout.bad { background:#fff4ee; }
+#readout.warn { background:#fff7e8; }
+.accidental { display:inline-block; width:.58em; height:1.13em; vertical-align:-.14em; fill:currentColor; stroke:currentColor; stroke-width:1.35; stroke-linecap:round; stroke-linejoin:round; overflow:visible; }
+.accidental.double-flat { width:.9em; }
+.accidental path { vector-effect:non-scaling-stroke; }
+#plateName .accidental { width:.55em; }
+#readout .accidental { stroke-width:1.1; }
+#rotateNotice { display:none; position:fixed; inset:0; z-index:90; background:var(--bg); align-items:center; justify-content:center; flex-direction:column; gap:18px; padding:24px; text-align:center; }
+#rotateNotice svg { width:70px; height:70px; fill:none; stroke:var(--steel); stroke-width:2; }
+[data-motion="reduced"] *,[data-motion="reduced"] *::before,[data-motion="reduced"] *::after { transition-duration:0s!important; animation-duration:0s!important; animation-delay:0s!important; }
+@media (prefers-reduced-motion:reduce) { *,*::before,*::after { transition-duration:0s!important; animation-duration:0s!important; animation-delay:0s!important; } }
+@media (max-height:544px) { #rotateNotice { display:flex; } }
+@media (max-width:340px) { #hud { gap:4px; } #dots { gap:3px; } #soundChip { padding:0 8px; } #dayName { font-size:14px; } }
+.music-acc { display:inline-block; white-space:nowrap; line-height:1; }
+
+/* 사용자 화면은 세로로 읽고, 운행 화면은 기존의 고정 무대를 쓴다. */
+.screen-panel{position:absolute;inset:6px 8px;z-index:20;background:var(--bg);overflow:auto;overscroll-behavior:contain;border-radius:18px;padding:18px 14px 24px;scrollbar-width:thin}
+.screen-panel h1,.screen-panel h2,.screen-panel p{margin:0}
+.screen-panel h1{font-size:25px;line-height:1.25;letter-spacing:-.04em}
+.screen-panel h2{font-size:18px;line-height:1.4;letter-spacing:-.025em}
+.screen-panel p{font-size:15px;line-height:1.7}
+.screen-button{min-width:44px;min-height:46px;padding:10px 16px;border:1px solid #a5b7c3;border-radius:12px;background:#fff;font-size:14px;font-weight:700;display:inline-flex;justify-content:center;align-items:center;gap:6px;color:var(--ink);line-height:1.35;flex-shrink:0}
+.screen-button.primary{background:var(--steel);border-color:var(--steel);color:#fff;min-height:52px;font-size:16px;box-shadow:0 4px 0 #104b62}
+.screen-button.secondary{background:var(--steel-soft);border-color:var(--steel);color:var(--steel)}
+.screen-button.selected,.screen-button[aria-pressed=true]{background:var(--steel-soft);border-color:var(--steel);box-shadow:inset 0 0 0 1px var(--steel)}
+.screen-button:disabled{background:#e1e7eb;color:#596975;cursor:default;box-shadow:none}
+.screen-heading{display:flex;align-items:flex-start;gap:14px;margin-bottom:22px;min-height:46px}
+.screen-heading>div{flex:1;padding-top:2px}
+.screen-heading p{font-size:13px;color:var(--ink-2);margin-top:6px}
+.back-button{min-height:44px;padding:8px 12px;border-color:transparent;background:transparent;color:var(--steel)}
+.screen-footer{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.screen-footer>.screen-button{flex:1}
+.title-screen{min-height:100%;display:flex;flex-direction:column;max-width:540px;margin:auto;position:relative;padding:8px 10px 4px}
+.title-brand{display:flex;gap:10px;align-items:center;margin-bottom:24px}
+.title-brand p{font-size:12px;letter-spacing:.04em;color:var(--steel);font-weight:700}
+.brand-mark{display:flex;gap:3px;align-items:end;height:22px}
+.brand-mark i{display:block;width:7px;background:var(--steel);border-radius:2px}
+.brand-mark i:nth-child(1){height:9px}.brand-mark i:nth-child(2){height:15px}.brand-mark i:nth-child(3){height:21px}
+.title-screen h1{font-size:clamp(40px,8.8vw,64px);line-height:1.05;letter-spacing:-.065em;color:#173746;z-index:1}
+.title-lead{font-size:17px!important;line-height:1.55!important;color:var(--ink-2);margin-top:18px!important;z-index:1}
+.station-art{display:block;width:100%;margin:-12px 0 -3px;min-height:170px;flex:1;max-height:330px}
+.title-actions{display:flex;flex-direction:column;gap:13px;z-index:1}
+.title-links{display:flex;gap:8px;margin-top:2px}.title-links>.screen-button{flex:1;padding-left:6px;padding-right:6px;background:transparent;border-color:transparent;color:var(--steel)}
+.map-list{display:flex;flex-direction:column;gap:10px;position:relative}
+.day-stop{position:relative;display:flex;align-items:center;gap:14px;min-height:84px;width:100%;padding:12px;background:#fff;border:1px solid var(--line);border-radius:15px;text-align:left;z-index:1;box-shadow:0 2px 0 #d7e0e6}
+.day-number{display:flex;align-items:center;justify-content:center;width:44px;height:44px;flex-shrink:0;border-radius:13px;background:var(--steel-soft);color:var(--steel);font-size:16px;font-weight:800}
+.day-copy{flex:1;display:flex;flex-direction:column;gap:5px}.day-copy strong{font-size:15px}.day-copy>span{font-size:12px;color:var(--ink-2);line-height:1.5}
+.day-stamp{display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--steel);min-width:39px;text-align:center}
+.day-stop.passed .day-stamp{color:var(--good);border:2px solid var(--good);width:45px;height:45px;border-radius:50%;transform:rotate(-8deg);line-height:1.15}
+.day-stop:disabled{background:#e1e7eb;color:#596975;box-shadow:none}.day-stop:disabled .day-number{background:#d2dce3;color:#596975}.day-stop:disabled .day-stamp{color:#596975}
+.closing-summary{display:flex;gap:26px;align-items:center;padding:22px;background:white;border:1px solid var(--line);border-radius:18px;margin-bottom:18px}
+.closing-summary>div{flex:1}.closing-summary p{font-size:13px!important;color:var(--ink-2)}.closing-summary strong{font-size:45px;letter-spacing:-.06em;line-height:1.5}.closing-summary strong small{font-size:22px;color:var(--ink-2);font-weight:500}
+.stamp-art{width:95px;height:95px;border:4px double var(--good);border-radius:50%;font-size:21px;line-height:1.15;font-weight:800;color:var(--good);display:flex;align-items:center;justify-content:center;transform:rotate(-12deg);text-align:center;flex-shrink:0}
+.stamp-art.pending{color:var(--steel);border-color:var(--steel)}
+.result-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:2px}.result-list li{display:flex;align-items:center;gap:12px;min-height:40px;padding:5px 13px;border-bottom:1px solid #d6e0e7;font-size:14px}.result-dot{font-size:19px;color:var(--steel)}
+.new-cards{margin-top:20px;padding:16px;border-radius:12px;background:#fff3c4}.new-cards h2{font-size:15px}.new-cards p{margin-top:7px;font-size:14px}.test-caption{font-size:12px!important;color:var(--ink-2);text-align:center;margin-top:18px!important}
+.discovery-visual{border:1px solid var(--line);background:#fff;border-radius:18px;overflow:hidden;padding:12px 0 16px}.mini-stage{display:block;width:100%;height:auto}.diagram-symbol{font-size:23px;font-weight:800;text-align:center;color:var(--steel);letter-spacing:-.03em}.discovery-text{font-size:18px!important;line-height:1.8!important;margin:24px 4px!important;letter-spacing:-.025em}
+.scene-pages{display:flex;gap:7px;flex-wrap:wrap;justify-content:center}.scene-pages .screen-button{font-size:13px;padding:9px 12px;min-height:44px}
+.book-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.book-card{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;min-height:144px;padding:16px;border:1px solid #a8bfce;border-radius:15px;background:#fff;text-align:left;box-shadow:0 3px 0 #cfdae2}
+.book-card>span{font-size:12px;color:var(--steel);font-weight:700}.book-card strong{font-size:16px;line-height:1.45;margin:12px 0;letter-spacing:-.035em}.book-card small{font-size:12px;color:var(--ink-2)}.book-card.locked{background:#dfe6eb;border-color:#c7d2da;color:#596975;box-shadow:none}.book-card.locked>span{color:#596975}
+.card-detail{padding:18px;border:2px solid var(--steel);background:white;border-radius:16px;margin-bottom:20px}.card-detail .eyebrow{font-size:12px;font-weight:700;color:var(--steel)}.card-detail h2{margin:8px 0 0!important}.card-detail p{margin:10px 0 18px!important}.card-detail .mini-stage{margin:14px 0}
+.sub-heading{margin:26px 0 13px!important}.scene-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.scene-list .screen-button{padding:10px 7px}
+.stat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.stat-grid>div{display:flex;flex-direction:column;gap:10px;padding:19px 8px;text-align:center;border:1px solid var(--line);background:white;border-radius:14px}.stat-grid strong{font-size:30px;color:var(--steel)}.stat-grid span{font-size:12px;color:var(--ink-2)}
+.cause-list{list-style:none;padding:0;margin:0}.cause-list li{display:flex;gap:10px;justify-content:space-between;padding:15px 0;border-bottom:1px solid var(--line);font-size:14px;line-height:1.5}.cause-list b{flex-shrink:0;color:var(--steel)}.empty-note{padding:18px;background:white;border-radius:12px;font-size:14px!important;color:var(--ink-2)}.history-list{background:white;border:1px solid var(--line);border-radius:14px;padding:4px 16px}.history-list>div{display:flex;gap:16px;justify-content:space-between;border-bottom:1px solid #dde5eb;padding:14px 0;font-size:14px}.history-list>div:last-child{border:0}.history-list strong{color:var(--steel);white-space:nowrap}
+.settings-list{background:#fff;border:1px solid var(--line);border-radius:15px;padding:0 15px}.settings-list label{display:flex;justify-content:space-between;align-items:center;gap:15px;min-height:70px;border-bottom:1px solid #dce5eb;font-size:14px}.settings-list label:last-child{border:0}.settings-list input[type=range]{width:45%;min-height:44px;accent-color:var(--steel)}.settings-list input[type=checkbox]{width:44px;height:44px;accent-color:var(--steel)}.settings-list select{font:inherit;min-height:44px;max-width:57%;padding:8px;border:1px solid #a5b7c3;border-radius:8px;background:#f5f8fa;color:var(--ink)}.settings-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}.settings-actions .screen-button{flex:1}.reset-area{border-top:1px solid #c7d2da;margin-top:28px;padding-top:20px}.reset-area h2{font-size:16px}.reset-area p{font-size:13px;color:var(--ink-2);margin:8px 0 14px}.reset-area .screen-button{margin-right:6px}.screen-button.danger{color:var(--bad);border-color:var(--bad);background:#fff}.storage-note{color:var(--warn);font-size:13px!important;margin-top:16px!important}
+.test-summary{padding:30px 20px;background:white;border:1px solid var(--line);border-radius:16px;text-align:center}.test-summary strong{font-size:40px;color:var(--steel)}.test-summary p{font-size:14px}.test-results{font-size:13px;line-height:1.8;padding-left:20px}
+@media(min-width:600px){.screen-panel{padding:30px 36px}.title-screen{padding:0 10px}.book-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.title-brand{margin-bottom:30px}.station-art{margin-top:-62px;margin-left:42px;width:calc(100% - 20px)}.title-actions{margin-top:12px}.scene-list{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-height:640px){.screen-panel{padding-top:12px}.title-brand{margin-bottom:14px}.title-screen h1{font-size:40px}.title-lead{font-size:15px!important;margin-top:10px!important}.station-art{max-height:190px;margin-top:-10px;min-height:100px}.title-screen{padding-top:0}.title-actions{gap:10px}.title-links .screen-button{min-height:44px}.screen-heading{margin-bottom:16px}}
+@media(prefers-reduced-motion:reduce){.screen-panel *{animation:none!important;transition:none!important}}
+
+.homeBtn { width:44px;height:44px;flex:0 0 44px;border:0;border-radius:12px;background:var(--steel-soft);color:var(--steel);display:grid;place-items:center;padding:10px; }
+.homeBtn svg { width:23px;height:23px;fill:currentColor; }
+#labPanel { position:absolute;top:57px;left:8px;right:8px;z-index:4;display:flex;gap:6px;flex-wrap:wrap;padding:8px;background:var(--panel);border:1px solid var(--line);border-radius:12px; }
+#labPanel label { display:flex;align-items:center;gap:4px;font-size:12px;flex:1; }
+#labPanel select { height:44px;max-width:120px;flex:1;min-width:0;font:inherit;border:1px solid var(--line);border-radius:8px;background:white; }
+.labMasks { display:flex;gap:4px;width:100%; }
+.labMasks button { font:inherit;font-size:12px;flex:1;min-height:44px;border:1px solid var(--steel);border-radius:8px;color:var(--steel);background:white;padding:4px; }
+.labMasks button[aria-pressed=true] { background:var(--steel-soft); }
+#tutorial { position:absolute;top:calc(44px + var(--cardH) + 18px);left:50%;transform:translateX(-50%);background:var(--ink);color:white;padding:7px 12px;border-radius:10px;z-index:5;font-size:12px;max-width:calc(100% - 28px);white-space:nowrap;pointer-events:none; }
+#rotateNotice { position:absolute;inset:0;z-index:20;background:var(--bg);display:grid;place-items:center;font-weight:700; }
+html[data-motion=reduced] * { transition-duration:0s!important;animation-duration:0s!important; }
+
+#labOptionsBtn,#closeLabOptions {min-height:44px;border:1px solid var(--steel);border-radius:8px;background:var(--steel-soft);color:var(--steel);font:inherit;font-size:12px;padding:5px;}
+
+#soundCheck{position:fixed;inset:0;display:grid;place-items:center;background:#142f3d88;z-index:100;padding:24px;}
+#soundCheck>div{background:white;border-radius:20px;padding:24px;max-width:340px;width:100%;box-shadow:0 10px 50px #1234;}
+#soundCheck h2{margin:0 0 12px;font-size:22px;}
+#soundCheck p{font-size:15px;line-height:1.6;}
+#soundCheck button{min-height:48px;padding:10px 16px;border-radius:10px;border:1px solid var(--steel);background:var(--steel-soft);color:var(--steel);font-size:15px;margin-right:6px;}
+
+.inLab #askTag{display:none;}
+.inLab #card{grid-template-columns:minmax(0,1fr) auto auto;gap:5px;}
+.inLab #labOptionsBtn{max-width:60px;white-space:normal;}
+
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="hud">
+    <button id="homeBtn" type="button" aria-label="운행일 지도로" class="homeBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10 12 3l8 7v11h-6v-7h-4v7H4z"/></svg></button><b id="dayName"></b>
+    <span id="dots" role="img" aria-label="진행"></span>
+    <button id="soundChip" type="button" hidden>소리 켜기</button>
+  </header>
+  <section id="card" aria-label="운행 카드">
+    <span id="askTag"></span>
+    <p id="askText"></p>
+    <div id="plate"><b id="plateName"></b><small id="plateSub"></small></div><button id="labOptionsBtn" type="button" hidden>화음 설정</button>
+  </section>
+  <section id="stage" aria-label="무대">
+    <svg id="bg" aria-hidden="true" focusable="false"><g id="bgStatic"></g><g id="bgDyn"></g></svg>
+    <div id="lamp" aria-hidden="true"></div>
+    <div id="tokens"></div>
+  </section>
+  <p id="readout" role="status" aria-live="polite"></p>
+  <section id="controls" aria-label="조작">
+    <div id="rowA">
+      <button id="btnA" type="button" class="seg" hidden>A</button>
+      <button id="btnB" type="button" class="seg" hidden>B</button>
+      <button id="btnDown" type="button" class="ride" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 5h12L8 13z"/></svg><span>내리기</span></button>
+      <button id="btnReset" type="button" class="mini" hidden>처음</button>
+      <div id="chips" hidden></div>
+      <button id="btnUp" type="button" class="ride" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 11h12L8 3z"/></svg><span>올리기</span></button>
+      <button id="padBass" type="button" class="pad" hidden>밑음 치기</button>
+      <button id="padUpper" type="button" class="pad" hidden>윗음 치기</button>
+    </div>
+    <div id="rowB">
+      <button id="btnHear" type="button">듣기</button>
+      <button id="btnOk" type="button" class="main">확정</button>
+    </div>
+  </section>
+  <section id="screenPanel" hidden aria-label="메뉴"></section>
+  <section id="labPanel" hidden aria-label="자유 실험실 설정"></section>
+  <div id="soundCheck" hidden role="dialog" aria-modal="true" aria-label="소리 확인"><div><h2>소리가 들리나요?</h2><p>가장 낮은 C 음을 들려드려요.</p><button type="button" data-sound-check="yes">들려요</button><button type="button" data-sound-check="no">안 들려요</button></div></div>
+  <div id="tutorial" hidden role="status"></div>
+  <div id="rotateNotice" hidden>세로로 돌려 주세요</div>
+
+</div>
+<script>
+
+// SOURCE theory.js
+// ═══ 1 THEORY ═══ 이론 엔진. 표를 두지 않고 공식 둘(장음계, 3도 쌓기)에서 만든다. 화면과 소리를 부르지 않는다
+const MAJOR = [2, 2, 1, 2, 2, 2, 1];                                              // 장음계 공식: 온 온 반 온 온 온 반
+const LETTERS = "CDEFGAB";
+const NAT = MAJOR.slice(0, -1).reduce((a, s) => a.concat(a[a.length - 1] + s), [0]);   // 자연음의 반음값 = 공식의 누적합
+const OCT = MAJOR.reduce((a, b) => a + b, 0), STEPS = MAJOR.length;               // 한 옥타브 = 반음 12개 = 글자(오선 자리) 7개
+const M3 = NAT[2] - NAT[0], m3 = NAT[4] - NAT[2];                                 // 장3도(C–E), 단3도(E–G)
+const hz = (midi) => 440 * Math.pow(2, (midi - 69) / 12);                         // 주파수 공식. 이것만 쓴다
+const ACC = { bb: -2, b: -1, "": 0, "#": 1, x: 2 };
+const ACC_TXT = ["𝄫", "♭", "", "♯", "𝄪"], ACC_KO = ["더블플랫", "플랫", "", "샵", "더블샵"];
+const QUAL = {                                                                    // 3도 쌓기 공식(아래에서 위로). M 장3도, m 단3도
+  "": { stack: "Mm", ko: "장3화음" }, m: { stack: "mM", ko: "단3화음" },
+  dim: { stack: "mm", ko: "감3화음" }, aug: { stack: "MM", ko: "증3화음" },
+  M7: { stack: "MmM", ko: "장7화음" }, 7: { stack: "Mmm", ko: "딸림7화음" }, m7: { stack: "mMm", ko: "단7화음" },
+  m7b5: { stack: "mmM", ko: "반감7화음" }, dim7: { stack: "mmm", ko: "감7화음" },
+};
+const INV_KO = ["기본 위치", "첫째 자리바꿈", "둘째 자리바꿈", "셋째 자리바꿈"];     // 밑음이 근음 · 3음 · 5음 · 7음일 때
+const INV_HAN = ["기본위치", "제1전위", "제2전위", "제3전위"];                       // 같은 것의 한자말(교재 표기)
+const degKo = (k) => (k ? 2 * k + 1 + "음" : "근음");                              // 구성음의 이름: 근음, 3음, 5음, 7음
+
+// 음: { l 글자(0~6), a 기호(−2~2), o 옥타브 }. 글자와 기호를 따로 둔다. E♯을 F로 바꾸지 않는다
+const pc = (s) => { const m = /^([A-G])(bb|b|x|#)?$/.exec(s); return m ? { l: LETTERS.indexOf(m[1]), a: ACC[m[2] || ""] } : null; };
+const note = (s) => { const m = /^([A-G](?:bb|b|x|#)?)(\d)$/.exec(s), p = m && pc(m[1]); return p ? { l: p.l, a: p.a, o: +m[2] } : null; };
+const midi = (n) => OCT * (n.o + 1) + NAT[n.l] + n.a;                             // 건반 번호
+const pos = (n) => STEPS * n.o + n.l;                                             // 오선 자리. 기호는 자리를 바꾸지 않는다
+const pcName = (p) => LETTERS[p.l] + ACC_TXT[p.a + 2];                            // 화면에 적는 이름
+const pcAscii = (p) => LETTERS[p.l] + Object.keys(ACC).find((key) => ACC[key] === p.a);
+const pcSay = (p) => LETTERS[p.l] + (p.a ? " " + ACC_KO[p.a + 2] : "");            // 화면 읽기에 주는 이름
+
+// 화음: 이름에서 구성음을 만든다. 근음에서 한 글자씩 건너며 공식의 3도를 쌓는다
+function chord(id) {
+  const m = /^([A-G](?:bb|b|x|#)?)(.*)$/.exec(id), q = m && QUAL[m[2]];
+  if (!q) return null;
+  const root = pc(m[1]), tones = [root];
+  let semi = NAT[root.l] + root.a;
+  for (let k = 1; k <= q.stack.length; k++) {
+    semi += q.stack[k - 1] === "M" ? M3 : m3;
+    const l = (root.l + 2 * k) % STEPS;                                           // 3도 위의 글자: 한 글자를 건넌다
+    tones.push({ l, a: ((((semi - NAT[l]) % OCT) + OCT + 6) % OCT) - 6 });         // 그 글자에 붙는 기호
+  }
+  return { id, sym: pcName(root) + m[2].replace("b5", "(♭5)"), ko: q.ko, root, tones, n: tones.length };
+}
+
+// 배치: 구성음마다 { k 몇째 구성음, o 옥타브 }. v1.0의 배치는 구성음이 하나씩이고 k 순서로 둔다
+const noteAt = (ch, x) => ({ l: ch.tones[x.k].l, a: ch.tones[x.k].a, o: x.o });
+const midiAt = (ch, x) => midi(noteAt(ch, x));
+const posAt = (ch, x) => pos(noteAt(ch, x));
+const voicing = (ch, s) => s.split(" ").map((t) => { const n = note(t); return { k: n ? ch.tones.findIndex((c) => c.l === n.l && c.a === n.a) : -1, o: n ? n.o : 0 }; });
+const byMember = (v) => v.slice().sort((x, y) => x.k - y.k);
+const isPlain = (ch, v) => v.length === ch.n && byMember(v).every((x, i) => x.k === i);   // 구성음이 빠짐없이 하나씩
+const order = (ch, v) => v.map((_, i) => i).sort((i, j) => midiAt(ch, v[i]) - midiAt(ch, v[j]));   // 낮은 순서로 늘어놓은 색인
+const bassIx = (ch, v) => order(ch, v)[0];                                        // 밑음 = 실제로 가장 낮은 음. 배열의 첫 원소가 아니다
+const topIx = (ch, v) => order(ch, v)[v.length - 1];
+const inversion = (ch, v) => v[bassIx(ch, v)].k;                                  // 자리바꿈 번호 = 밑음이 몇째 구성음인가
+const move = (v, i, d) => v.map((x, j) => (j === i ? { k: x.k, o: x.o + d } : x));   // 한 음을 옥타브만 옮긴다. 글자와 기호는 그대로
+const rideUp = (ch, v) => move(v, bassIx(ch, v), 1);                              // 올리기: 가장 낮은 음이 한 옥타브 위로
+const rideDown = (ch, v) => move(v, topIx(ch, v), -1);                            // 내리기: 가장 높은 음이 한 옥타브 아래로
+const span = (ch, v) => midiAt(ch, v[topIx(ch, v)]) - midiAt(ch, v[bassIx(ch, v)]);
+const isClose = (ch, v) => span(ch, v) < OCT;                                     // 밀집 배치: 모든 음이 한 옥타브 안
+const sameV = (a, b) => a.length === b.length && a.every((x) => b.some((y) => y.k === x.k && y.o === x.o));
+const gaps = (ch, v) => { const o = order(ch, v); return o.slice(1).map((i, j) => posAt(ch, v[i]) - posAt(ch, v[o[j]]) + 1); };   // 이웃한 음 사이의 도수
+const isStack = (ch, v) => gaps(ch, v).every((g) => g === 3);                     // 3도로만 쌓였는가
+const FRAME = { lo: pos(note("C4")), hi: pos(note("C6")) };                       // 무대의 층: C4부터 C6까지 오선 자리 15개
+const inFrame = (ch, v, f = FRAME) => v.every((x) => posAt(ch, x) >= f.lo && posAt(ch, x) <= f.hi);
+function closeV(ch, inv, lo = FRAME.lo) {                                         // 밀집 배치: inv째 구성음을 lo 자리 이상에서 가장 낮게 놓고 구성 순서대로 쌓는다
+  const v = [];
+  let prev = null;
+  for (let j = 0; j < ch.n; j++) {
+    const k = (inv + j) % ch.n;
+    let o = 0;
+    while (prev === null ? posAt(ch, { k, o }) < lo : midiAt(ch, { k, o }) <= prev) o++;
+    v.push({ k, o });
+    prev = midiAt(ch, { k, o });
+  }
+  return byMember(v);
+}
+const vText = (ch, v, oct = true) => order(ch, v).map((i) => pcName(ch.tones[v[i].k]) + (oct ? v[i].o : "")).join(" ");   // 낮은 음부터 적는다
+const vAscii = (ch, v) => order(ch, v).map((i) => pcAscii(ch.tones[v[i].k]) + v[i].o).join(" ");
+const symOfInv = (ch, k) => ch.sym + (k ? "/" + pcName(ch.tones[k]) : "");        // 슬래시 왼쪽은 화음, 오른쪽은 밑음
+const symbolOf = (ch, v) => symOfInv(ch, inversion(ch, v));
+function slash(s) {                                                               // 심벌 읽기: 밑음이 근음인가, 다른 구성음인가(자리바꿈), 화음 밖의 음인가
+  const [c, b] = s.split("/"), ch = chord(c), p = b === undefined ? null : pc(b);
+  if (!ch || (b !== undefined && !p)) return null;
+  const k = p ? ch.tones.findIndex((t) => t.l === p.l && t.a === p.a) : 0;
+  return { ch, bass: p || ch.root, k, kind: k < 0 ? "outside" : k ? "inversion" : "root" };
+}
+function rootLetter(letters) {                                                    // 이름 없이 근음 찾기: 어느 글자에서 한 글자씩 건너 나머지에 모두 닿는가
+  const set = [...new Set(letters)];
+  return set.find((r) => set.every((l) => { const d = (l - r + STEPS) % STEPS; return d % 2 === 0 && d / 2 < set.length; }));
+}
+function reach(ch, v0, free, f = FRAME) {                                         // 허용된 조작으로 갈 수 있는 배치 전부와 최소 조작 수(너비 우선)
+  const key = (v) => byMember(v).map((x) => x.k + "." + x.o).join(" "), seen = new Map([[key(v0), { v: v0, d: 0 }]]), q = [v0];
+  while (q.length) {
+    const v = q.shift(), d = seen.get(key(v)).d;
+    const next = free ? v.flatMap((_, i) => [move(v, i, 1), move(v, i, -1)]) : [rideUp(ch, v), rideDown(ch, v)];
+    for (const w of next) if (inFrame(ch, w, f) && !seen.has(key(w))) { seen.set(key(w), { v: w, d: d + 1 }); q.push(w); }
+  }
+  return [...seen.values()];
+}
+
+
+// SOURCE words.js
+// 표시 낱말은 한 곳에서 바꾼다. 검사는 학습 설정을 저장하지 않고 격리한다.
+let wordTestSettings = null;
+function wordSettings() {
+  return wordTestSettings || (typeof saveData !== "undefined" ? saveData.settings : { bassWord: "밑음", invWord: "자리바꿈" });
+}
+function withWords(settings, fn) {
+  const previous = wordTestSettings;
+  wordTestSettings = settings;
+  try { return fn(); } finally { wordTestSettings = previous; }
+}
+const WORDS = {
+  root: "근음", rootEn: "Root", bassEn: "Bass",
+  get bass() { return wordSettings().bassWord || "밑음"; },
+  get inv() { return INV_KO.map((text, k) => wordSettings().invWord === "전위" ? ["기본위치", "제1전위", "제2전위", "제3전위"][k] : text); },
+  get invShort() { return wordSettings().invWord === "전위" ? ["기본위치", "제1전위", "제2전위", "제3전위"] : INV_SHORT; }
+};
+const invName = k => WORDS.inv[k];
+const invShort = k => WORDS.invShort[k];
+function translateWords(text) {
+  let result = String(text);
+  if (wordSettings().bassWord === "베이스") {
+    result = result.replaceAll("밑음은", "베이스는").replaceAll("밑음이", "베이스가")
+      .replaceAll("밑음을", "베이스를").replaceAll("밑음과", "베이스와")
+      .replaceAll("밑음으로", "베이스로").replaceAll("밑음이에요", "베이스예요")
+      .replaceAll("밑음", "베이스");
+  }
+  if (wordSettings().invWord === "전위") {
+    for (const [oldWord, newWord] of [["첫째 자리바꿈", "제1전위"], ["둘째 자리바꿈", "제2전위"], ["셋째 자리바꿈", "제3전위"]]) {
+      result = result.replaceAll(oldWord + "이에요", newWord + "예요")
+        .replaceAll(oldWord + "은", newWord + "는").replaceAll(oldWord + "이", newWord + "가")
+        .replaceAll(oldWord + "을", newWord + "를").replaceAll(oldWord, newWord);
+    }
+    result = result.replaceAll("기본 위치", "기본위치").replaceAll("자리바꿈", "전위");
+  }
+  return result;
+}
+
+
+// SOURCE flow.js
+// ═══ 2 FLOW ═══ 문제 모델과 흐름. 씨앗에서 정답, 보기, 까닭, 문장을 만든다. 화면과 소리를 부르지 않는다
+const ASK_KO = { low: "밑음 찾기", root: "근음 찾기", both: "둘 다 찾기", make: "만들기", name: "이름 붙이기", same: "함정 탐정", fix: "이름표 수리" };
+const INV_SHORT = ["기본 위치", "첫째", "둘째", "셋째"];
+
+// 조사: 앞말의 받침을 보고 고른다. 음이름 글자(C~B)와 m(마이너)은 받침이 없고, 7(칠)과 ♯(샵) ♭(플랫)은 받침이 있다
+const lastOf = (w) => Array.from(w).pop();
+function batchim(w) {                                                             // 0 받침 없음, 1 받침 있음, 2 ㄹ받침
+  const c = lastOf(w), u = c.codePointAt(0);
+  if (u >= 0xac00 && u <= 0xd7a3) { const f = (u - 0xac00) % 28; return f === 0 ? 0 : f === 8 ? 2 : 1; }
+  if (c >= "0" && c <= "9") return "178".includes(c) ? 2 : "036".includes(c) ? 1 : 0;
+  return ACC_TXT.includes(c) && c ? 1 : 0;
+}
+const josa = (w, pair) => w + pair.split("/")[batchim(w) ? 0 : 1];                // josa("C", "은/는") → "C는"
+const ro = (w) => w + (batchim(w) === 1 ? "으로" : "로");
+const ye = (w) => w + (batchim(w) ? "이에요" : "예요");
+const raseo = (w) => w + (batchim(w) ? "이라서" : "라서");
+
+// 씨앗으로 섞기: 같은 문제는 늘 같은 순서
+function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const hash = (s) => { let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0; };
+function shuffled(arr, seed) { const r = rng(seed), a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+// 문제 모델: 씨앗(방식, 화음, 처음 배치, 목표)에서 단계와 정답을 만든다
+function build(job, day = {}) {
+  const ch = chord(job.chord), v0 = byMember(voicing(ch, job.from)), nm = (k) => pcName(ch.tones[k]);
+  const m = { id: job.id, ask: job.ask, tag: ASK_KO[job.ask], ch, v0, help: !!job.help, final: !!job.final, free: job.free !== undefined ? !!job.free : !!day.free,
+    roles: job.roles !== false, plain: !!job.plain, blind: !!job.blind, row: job.row ? voicing(ch, job.row).map((x) => x.k) : null, steps: [], by: "", text: "" };
+  if (job.ask === "low") { m.steps.push({ kind: "pick", want: "bass" }); m.text = m.plain ? "가장 낮은 음을 골라 주세요." : "밑음을 골라 주세요."; }
+  if (job.ask === "root") { m.steps.push({ kind: "pick", want: "root", tool: m.blind }); m.text = m.blind ? "이름표가 가려졌어요. 근음을 찾아 주세요." : "근음을 골라 주세요."; }
+  if (job.ask === "both") { m.steps.push({ kind: "pick", want: "root" }, { kind: "pick", want: "bass" }); m.text = "근음과 밑음을 차례로 골라 주세요."; }
+  if (job.ask === "make") {
+    const to = job.to;
+    if (to === "keep") { m.by = "keep"; m.target = { keep: true }; m.text = "밑음은 그대로 두고 다른 음 하나를 옮겨 주세요."; }
+    else if (to.inv !== undefined) { m.by = "inv"; m.target = { k: to.inv }; m.text = josa(invName(to.inv), "을/를") + " 만들어 주세요."; }
+    else if (to.sym) { const s = slash(to.sym); m.by = "sym"; m.target = { k: s && s.ch.id === ch.id ? s.k : -1 }; m.text = josa(symOfInv(ch, Math.max(0, m.target.k)), "을/를") + " 만들어 주세요."; }
+    else { const p = pc(to.bass); m.by = "bass"; m.target = { k: ch.tones.findIndex((t) => t.l === p.l && t.a === p.a) }; m.text = josa(pcName(p), "이/가") + " 가장 낮게 서도록 만들어 주세요."; }
+    m.steps.push({ kind: "ride" });
+  }
+  if (job.ask === "name") {
+    const t = inversion(ch, v0);
+    let cs = ch.tones.map((_, k) => ({ label: job.by === "sym" ? symOfInv(ch, k) : invShort(k), tag: "inv", k }));
+    if (job.by === "sym" && job.trap && t) cs = shuffled([cs[t], cs[0], { label: nm(t) + "/" + nm(0), tag: "swap" }, { label: nm(t) + ch.sym.slice(nm(0).length), tag: "newroot" }], hash(job.id));
+    m.by = job.by === "sym" ? "sym" : "inv";
+    m.steps.push({ kind: "choose", choices: cs, answer: cs.findIndex((c) => c.tag === "inv" && c.k === t) });
+    m.text = m.by === "sym" ? "이 화음의 이름표를 골라 주세요." : "이 화음은 어느 자리일까요?";
+  }
+  if (job.ask === "same") {
+    m.vb = byMember(voicing(ch, job.b));
+    m.steps.push({ kind: "judge", choices: [{ label: "같아요" }, { label: "달라요" }], answer: inversion(ch, v0) === inversion(ch, m.vb) ? 0 : 1 });
+    m.text = "A와 B는 같은 자리바꿈일까요?";
+  }
+  if (job.ask === "fix") {                                                        // 잘못 붙은 이름표: 화음 이름이 틀렸나, 밑음이 틀렸나, 둘 다인가
+    const t = inversion(ch, v0), lab = slash(job.label), okCh = lab.ch.id === ch.id, okBass = lab.bass.l === ch.tones[t].l && lab.bass.a === ch.tones[t].a;
+    m.label = lab.ch.sym + (job.label.includes("/") ? "/" + pcName(lab.bass) : "");
+    m.labelOk = [okCh, okBass];
+    m.steps.push({ kind: "cause", choices: [{ label: "화음 이름" }, { label: "밑음" }, { label: "둘 다" }], answer: okCh ? 1 : okBass ? 0 : 2 });
+    m.steps.push({ kind: "choose", choices: ch.tones.map((_, k) => ({ label: symOfInv(ch, k), tag: "inv", k })), answer: t });
+    m.by = "sym"; m.text = "잘못 붙은 이름표를 고쳐 주세요.";
+  }
+  m.steps.push({ kind: "listen" });
+  m.tag = translateWords(m.tag);
+  m.text = translateWords(m.text);
+  for (const st of m.steps) if (st.choices) st.choices.forEach(c => { c.label = translateWords(c.label); });
+  return m;
+}
+
+const kept = (m, v) => { const b = inversion(m.ch, m.v0); return inversion(m.ch, v) === b && v[b].o === m.v0[b].o && !sameV(v, m.v0); };   // 밑음은 그 자리, 윗음만 옮김
+function right(m, s) {                                                            // 지금 단계의 답이 맞는가. 자리바꿈은 가장 낮은 음으로만 판정한다
+  const st = m.steps[s.step];
+  if (st.kind === "pick") return s.sel === (st.want === "root" ? 0 : inversion(m.ch, s.v));
+  if (st.kind === "ride") return m.target.keep ? kept(m, s.v) : inversion(m.ch, s.v) === m.target.k;
+  return s.choice === st.answer;
+}
+function fixV(m, s) {                                                             // 두 번째 오답 뒤에 고쳐 줄 배치: 지금 배치에서 가장 적게 옮겨 닿는 정답
+  const pool = m.target.keep ? reach(m.ch, m.v0, true).filter((x) => kept(m, x.v)) : reach(m.ch, s.v, m.free).filter((x) => inversion(m.ch, x.v) === m.target.k);
+  return pool.sort((a, b) => a.d - b.d)[0].v;
+}
+
+// 안내 문구: 단계의 첫 안내, 오답의 까닭(1차), 교정(2차), 마무리
+function prompt(m, i, v) {
+  const st = m.steps[i], b = inversion(m.ch, v), nb = pcName(m.ch.tones[b]);
+  if (st.kind === "pick" && st.want === "bass") return m.plain ? "높이를 보고 가장 낮은 음을 골라요." : m.help ? "밑음은 지금 가장 낮은 음이에요." : m.ask === "both" ? "이번에는 밑음을 골라요." : "밑음을 고르고 확정을 눌러요.";
+  if (st.kind === "pick") return m.blind ? (m.help ? "올리기와 내리기로 3도씩 쌓아 보세요. 맨 아래가 근음이에요." : "3도로 쌓아 근음을 찾아요.") : m.help ? "근음은 화음 이름에 적힌 음이에요." : "근음을 고르고 확정을 눌러요.";
+  if (st.kind === "ride") return m.help ? (m.plain ? "지금 가장 낮은 음은 " + ye(nb) + "." : "지금 밑음은 " + nb + ", " + ye(degKo(b)) + ". " + ye(invName(b)) + ".") : m.free ? "옮길 음을 누르고 올리기나 내리기를 눌러요." : "올리기와 내리기로 줄을 바꾸고 확정을 눌러요.";
+  if (st.kind === "choose") return m.ask === "fix" ? "바른 이름표를 골라요." : m.by === "sym" ? (m.help ? "슬래시 오른쪽이 밑음이에요. 이름표를 골라요." : "이름표를 고르고 확정을 눌러요.") : m.help ? "밑음이 몇 음인지 보고 골라요." : "자리를 고르고 확정을 눌러요.";
+  if (st.kind === "judge") return "A와 B를 번갈아 보고 골라요.";
+  if (st.kind === "cause") return "이름표 " + josa(m.label, "과/와") + " 줄을 견주어 틀린 곳을 골라요.";
+  return "";
+}
+function why(m, s) {                                                              // 1차 오답: 내 답이 어떤 생각에서 나왔는지 가려 까닭을 말한다. [부호, 문구]
+  const st = m.steps[s.step], ch = m.ch, v = s.v, b = inversion(ch, v), topK = v[topIx(ch, v)].k, nm = (k) => pcName(ch.tones[k]);
+  if (st.kind === "pick" && st.want === "bass") {
+    const k = s.sel;
+    if (m.row && !s.sorted && k === m.row[0]) return ["order", "맨 앞에 선 음이 아니에요. 줄 선 순서 말고 높이를 보세요."];
+    if (k === 0 && !m.plain) return ["root", josa(nm(k), "은/는") + " 근음이에요. 밑음은 지금 가장 낮은 음이에요."];
+    if (k === topK) return ["top", josa(nm(k), "은/는") + " 가장 높은 음이에요. 가장 낮은 음을 찾아요."];
+    return ["higher", nm(k) + "보다 낮은 음이 있어요. 높이를 다시 보세요."];
+  }
+  if (st.kind === "pick") {
+    const k = s.sel;
+    if (m.blind) return k === b ? ["bass", "가장 낮다고 근음은 아니에요. 3도씩 쌓이게 옮겨 보세요."] : ["stack", nm(k) + " 위로는 3도씩 쌓이지 않아요. 고르게 쌓이는 맨 아래 음을 찾아요."];
+    return k === b ? ["bass", josa(nm(k), "은/는") + " 지금 밑음이에요. 근음은 화음 이름에 적힌 음이에요."] : ["member", josa(nm(k), "은/는") + " " + ye(degKo(k)) + ". 근음은 화음 이름에 적힌 음이에요."];
+  }
+  if (st.kind === "ride") {
+    if (m.target.keep) return sameV(v, m.v0) ? ["still", "아직 아무도 옮기지 않았어요. 윗음 하나를 골라 옮겨 보세요."] : b !== inversion(ch, m.v0) ? ["bass", "밑음이 " + ro(nm(b)) + " 바뀌었어요. 밑음은 두고 윗음만 옮겨요."] : ["floor", "밑음이 다른 층으로 갔어요. 밑음은 두고 윗음만 옮겨요."];
+    const t = m.target.k;
+    if (sameV(v, m.v0)) return ["still", "아직 그대로예요. 올리기나 내리기로 음을 옮겨 보세요."];
+    if (topK === t) return ["top", josa(nm(t), "이/가") + " 가장 높이 올라갔어요. 가장 낮아야 밑음이에요."];
+    if (m.by === "bass") return ["bass", "지금 가장 낮은 음은 " + ye(nm(b)) + ". " + josa(nm(t), "이/가") + " 가장 낮아야 해요."];
+    if (m.by === "sym") return ["sym", "지금 이름표는 " + ye(symOfInv(ch, b)) + ". " + (t ? "슬래시 오른쪽의 음이" : "슬래시가 없으면 근음이") + " 가장 낮아야 해요."];
+    return ["inv", "지금 밑음은 " + nm(b) + ", " + ye(degKo(b)) + ". " + ye(invName(b)) + "."];
+  }
+  if (st.kind === "judge") {
+    const ba = inversion(ch, m.v0), bb = inversion(ch, m.vb), lift = m.vb.every((x, i) => x.o - m.v0[i].o === m.vb[0].o - m.v0[0].o);
+    return st.answer === 0 ? ["shape", (lift ? "모두 똑같이 옮겼을 뿐이에요." : "윗음의 자리만 달라요.") + " 밑음은 둘 다 " + ye(nm(ba)) + "."] : ["bass", "밑음이 " + nm(ba) + "에서 " + ro(nm(bb)) + " 바뀌었어요. 자리바꿈도 달라요."];
+  }
+  if (st.kind === "cause") {
+    const t = st.answer;
+    if (t === 2) return ["both", "한 군데만이 아니에요. 화음 이름과 밑음을 모두 견주어 보세요."];
+    if (s.choice === 2) return ["one", (t === 1 ? "화음 이름은 맞아요." : "밑음은 맞아요.") + " 틀린 곳은 한 군데예요."];
+    return t === 1 ? ["chordok", "화음 이름은 맞아요. 구성음이 그대로예요. 밑음을 보세요."] : ["bassok", "가장 낮은 음은 이름표대로예요. 화음 이름을 보세요."];
+  }
+  const c = st.choices[s.choice], t = st.choices[st.answer].k;
+  if (m.by === "inv") {
+    if (c.k === topK && topK !== t) return ["top", "가장 높은 음이 아니라 가장 낮은 음으로 정해요."];
+    if (c.k === t + 1) return ["ord", "하나 밀렸어요. 근음이 밑음일 때가 기본 위치예요."];
+    if (c.k === 0) return ["root", "기본 위치는 근음이 밑음일 때예요. 지금 밑음을 보세요."];
+    return ["inv", "밑음이 몇 음인지 보세요. " + (ch.n === 4 ? "3음 첫째, 5음 둘째, 7음 셋째예요." : "3음이면 첫째, 5음이면 둘째예요.")];
+  }
+  if (c.tag === "swap") return ["swap", "슬래시 왼쪽이 화음, 오른쪽이 밑음이에요."];
+  if (c.tag === "newroot") return ["newroot", "밑음이 바뀌어도 화음 이름은 그대로예요."];
+  if (c.k === 0) return ["noslash", "밑음이 근음이 아니면 슬래시 뒤에 밑음을 적어요."];
+  if (t === 0) return ["slash", "밑음이 근음이면 슬래시를 붙이지 않아요."];
+  return ["bass", "슬래시 오른쪽에는 지금 가장 낮은 음을 적어요."];
+}
+function mend(m, s) {                                                             // 2차 오답: 답을 놓아 주고 까닭을 말한다. 확정을 기다린다
+  const st = m.steps[s.step], ch = m.ch, b = inversion(ch, s.v), nm = (k) => pcName(ch.tones[k]);
+  if (st.kind === "pick" && st.want === "bass") return "가장 낮은 음은 " + ye(nm(b)) + ". 골라 두었어요. 확정을 눌러요.";
+  if (st.kind === "pick") return (m.blind ? "3도로 쌓으면 맨 아래가 " + ye(nm(0)) : ch.sym + "의 근음은 " + ye(nm(0))) + ". 골라 두었어요. 확정을 눌러요.";
+  if (st.kind === "ride") {
+    if (m.target.keep) return "윗음 하나만 옮겼어요. 밑음은 그대로예요. 확정을 눌러요.";
+    const t = m.target.k;
+    return (m.by === "inv" ? degKo(t) + " " + josa(nm(t), "이/가") + " 밑음이면 " + ye(invName(t)) : m.by === "sym" ? josa(symOfInv(ch, t), "은/는") + " " + josa(nm(t), "이/가") + " 가장 낮아요" : josa(nm(t), "이/가") + " 가장 낮게 섰어요") + ". 고쳐 두었어요. 확정을 눌러요.";
+  }
+  if (st.kind === "judge") return why(m, s)[1];                                   // 둘 중 하나라 2차가 없다
+  if (st.kind === "cause") return ["밑음은 맞고 화음 이름이 달라요.", "화음 이름은 맞고 밑음이 달라요.", "화음 이름도 밑음도 달라요."][st.answer] + " 골라 두었어요. 확정을 눌러요.";
+  const t = st.choices[st.answer].k;
+  return (m.by === "inv" ? "밑음 " + josa(nm(t), "은/는") + " " + ye(degKo(t)) + ". " + ye(invName(t)) : "가장 낮은 음이 " + raseo(nm(t)) + " " + ye(symOfInv(ch, t))) + ". 골라 두었어요. 확정을 눌러요.";
+}
+function summary(m, v) {                                                          // 마무리: 듣기 단계에 띄우는 한 줄
+  const ch = m.ch, b = inversion(ch, v), nm = (k) => pcName(ch.tones[k]);
+  if (m.plain) return "가장 낮은 음은 " + ye(nm(b)) + ". 낮은 음부터 들어 보세요.";
+  if (m.ask === "same") {
+    const bb = inversion(ch, m.vb);
+    return b === bb ? "둘 다 밑음이 " + ye(nm(b)) + ". " + ye(invName(b)) + "." : "밑음이 " + josa(nm(b), "과/와") + " " + ro(nm(bb)) + " 달라요. " + josa(invShort(b), "과/와") + " " + ye(invShort(bb)) + ".";
+  }
+  return symOfInv(ch, b) + ". 근음 " + nm(0) + ", 밑음 " + nm(b) + ". " + ye(invName(b)) + ".";
+}
+
+// 흐름 함수: (모델, 상태, 입력)을 받아 바뀔 값만 돌려준다. 상태를 직접 고치지 않는다
+const say = (tone, text, code = "") => ({ tone, text: translateWords(text), code });
+const F = {
+  start: (m) => ({ step: 0, v: m.v0, sel: null, choice: null, ab: 0, tries: 0, assisted: false, sorted: !m.row, off: [], fixed: false, moved: 0, last: null, done: false, msg: say("", prompt(m, 0, m.v0)) }),
+  tap(m, s, k) {                                                                  // 무대의 음을 누른다: 고르기에서는 답, 만들기에서는 탈 음. 누르는 것만으로는 채점하지 않는다
+    const st = m.steps[s.step];
+    if (st.kind === "pick") return s.off.includes(k) ? null : { sel: k };
+    if (st.kind === "ride" && m.free) return { sel: s.sel === k ? null : k };
+    return null;
+  },
+  ride(m, s, d) {                                                                 // 올리기(+1), 내리기(−1). 탈 음을 고르지 않았으면 가장 낮은 음이 오르고 가장 높은 음이 내린다
+    const st = m.steps[s.step], ch = m.ch;
+    if (st.kind !== "ride" && !st.tool) return null;
+    const i = st.kind === "ride" && m.free && s.sel !== null ? s.sel : d > 0 ? bassIx(ch, s.v) : topIx(ch, s.v), w = move(s.v, i, d);
+    if (!inFrame(ch, w)) return { msg: say("warn", d > 0 ? "더 올라갈 층이 없어요. 내리기를 써 보세요." : "더 내려갈 층이 없어요. 올리기를 써 보세요.", "edge") };
+    return { v: w, moved: s.moved + 1, fixed: false, last: { k: s.v[i].k, from: s.v[i].o, to: w[i].o, n: s.moved + 1 }, msg: say("", prompt(m, s.step, w)) };
+  },
+  pick(m, s, i) { const st = m.steps[s.step]; return st.choices && !s.off.includes(i) ? { choice: i } : null; },
+  flip: (m, s, w) => (m.ask === "same" && s.ab !== w ? { ab: w } : null),          // A와 B를 번갈아 본다
+  reset(m, s) { const st = m.steps[s.step]; return st.kind === "ride" || st.tool ? { v: m.v0, moved: 0, sel: st.kind === "ride" ? null : s.sel, fixed: false, last: null, msg: say("", prompt(m, s.step, m.v0)) } : null; },
+  confirm(m, s) {                                                                 // 채점은 여기서만 한다
+    const st = m.steps[s.step];
+    if (st.kind === "listen") return { done: true };
+    if (st.kind === "pick" && s.sel === null) return { msg: say("warn", "먼저 음을 골라 주세요.", "empty") };
+    if (st.choices && s.choice === null) return { msg: say("warn", "먼저 보기를 골라 주세요.", "empty") };
+    if (right(m, s)) {
+      const nx = s.step + 1, last = m.steps[nx].kind === "listen";
+      return { step: nx, sel: null, choice: null, tries: 0, off: [], fixed: false, sorted: true, moved: 0, last: null, msg: say("good", last ? summary(m, s.v) : prompt(m, nx, s.v)) };
+    }
+    if (s.tries === 0 || st.kind === "judge") {                                   // 1차: 결과를 그대로 두고 까닭을 말한다. 틀린 보기는 끈다
+      const [code, text] = why(m, s);
+      return Object.assign({ tries: 1, assisted: true, msg: say("bad", text, code) }, st.kind === "pick" ? { off: s.off.concat(s.sel), sel: null } : st.choices ? { off: s.off.concat(s.choice), choice: null } : {});
+    }
+    const text = mend(m, s);                                                      // 2차: 답을 놓아 주고 확정을 기다린다
+    if (st.kind === "pick") { const a = st.want === "root" ? 0 : inversion(m.ch, s.v); return { tries: 2, fixed: true, sel: a, off: m.ch.tones.map((_, k) => k).filter((k) => k !== a), msg: say("bad", text, "mend") }; }
+    if (st.kind === "ride") return { tries: 2, fixed: true, v: fixV(m, s), sel: null, last: null, msg: say("bad", text, "mend") };
+    return { tries: 2, fixed: true, choice: st.answer, off: st.choices.map((_, i) => i).filter((i) => i !== st.answer), msg: say("bad", text, "mend") };
+  },
+  result: (s) => (s.assisted ? "half" : "full"),                                  // ● 한 번에, ◐ 도움 받음
+};
+
+// 화면에 보일 것: 판단하기 전에는 답이 되는 표시를 가린다
+function show(m, s) {
+  const st = m.steps[s.step], L = st.kind === "listen", ch = m.ch, v = m.ask === "same" && s.ab ? m.vb : s.v;
+  const o = order(ch, v), rank = [], sorted = s.sorted || !m.row, askRoot = st.kind === "pick" && st.want === "root", askBass = st.kind === "pick" && st.want === "bass", b = v[o[0]].k;
+  o.forEach((i, r) => { rank[v[i].k] = r; });
+  return {
+    kind: st.kind, v, n: ch.n, bass: b, sorted, col: ch.tones.map((_, k) => (sorted ? rank[k] : m.row.indexOf(k))),
+    roles: !m.plain && (L || (m.roles && !askRoot)),                              // 구성음 이름과 근음 표지판
+    lamp: L || (sorted && !askBass && (askRoot || st.kind === "judge" ? m.help : true)),   // 밑음 자리의 불
+    plate: m.plain ? "" : L ? symOfInv(ch, b) : m.blind ? "?" : m.ask === "fix" ? m.label : st.kind === "ride" && m.help ? symOfInv(ch, b) : ch.sym,
+    sub: m.plain || (m.blind && !L) ? "" : ch.ko, bad: m.ask === "fix" && !L, gaps: m.blind && m.help && !L,
+    canRide: st.kind === "ride" || !!st.tool, canTap: st.kind === "pick" || (st.kind === "ride" && m.free), ab: m.ask === "same" ? s.ab : -1,
+    esc: st.kind === "ride" || !!st.tool, rider: st.kind === "ride" && m.free ? s.sel : null,   // 에스컬레이터 예고선: 탈 음(고르지 않았으면 가장 낮은 음과 가장 높은 음)이 갈 자리
+  };
+}
+
+// 출제 검사: 씨앗이 풀 수 있는가, 함정이 정답과 다른가
+function audit(job, day = {}) {
+  const e = [], m = build(job, day), ch = m.ch, need = (c, t) => { if (!c) e.push(job.id + ": " + t); };
+  need(isPlain(ch, m.v0) && inFrame(ch, m.v0), "처음 배치는 구성음이 하나씩이고 무대 안이어야 한다");
+  need(vAscii(ch, m.v0) === job.from, "처음 배치는 낮은 음부터 적는다");
+  if (m.row) need(m.row.length === ch.n && new Set(m.row).size === ch.n && m.row.every((k) => k >= 0) && m.row[0] !== inversion(ch, m.v0), "섞인 줄은 같은 음들이고 맨 앞이 밑음이 아니어야 한다");
+  if (m.ask === "make" && m.target.keep) need(m.free && reach(ch, m.v0, true).some((x) => x.d === 1 && kept(m, x.v)), "밑음을 두고 한 번에 옮길 윗음이 있어야 한다");
+  if (m.ask === "make" && !m.target.keep) {
+    need(m.target.k >= 0 && m.target.k !== inversion(ch, m.v0), "목표는 이 화음의 구성음이고 처음 자리와 달라야 한다");
+    need(reach(ch, m.v0, m.free).some((x) => inversion(ch, x.v) === m.target.k), "허용된 조작으로 목표에 닿아야 한다");
+  }
+  for (const st of m.steps) if (st.choices) need(st.answer >= 0 && st.answer < st.choices.length && new Set(st.choices.map((c) => c.label)).size === st.choices.length, "보기는 서로 다르고 정답이 그 안에 있어야 한다");
+  if (m.ask === "same") need(isPlain(ch, m.vb) && inFrame(ch, m.vb) && !sameV(m.v0, m.vb) && vAscii(ch, m.vb) === job.b, "B는 무대 안에 있고 A와 다른 배치여야 한다");
+  if (m.ask === "fix") need(m.label !== symbolOf(ch, m.v0) && !(m.labelOk[0] && m.labelOk[1]), "이름표가 틀려 있어야 한다");
+  if (m.blind) need(inversion(ch, m.v0) !== 0, "이름표를 가린 문제는 기본 위치로 내지 않는다");
+  if (m.ask === "root" && !m.blind) need(inversion(ch, m.v0) !== 0 || m.help, "근음 찾기는 근음이 밑음이 아닌 배치로 낸다(첫 안내 문제는 예외)");
+  if (job.final) need(!m.help, "마감 문제에는 도움이 없어야 한다");
+  return e;
+}
+
+// 소리의 예약표: 무엇을 몇 초 뒤에 얼마나 길게 낼지 정한다. 소리를 내는 쪽은 이 표를 그대로 예약한다
+const STEP_S = 0.5, TOGETHER_S = 1.3;
+function planListen(ch, v) {                                                      // 듣기: 낮은 음부터 하나씩(밑음이 먼저), 그다음 함께
+  const o = order(ch, v), n = o.length, ev = [];
+  o.forEach((i, r) => ev.push({ at: r * STEP_S, dur: STEP_S * 0.92, midi: midiAt(ch, v[i]), k: v[i].k, peak: 0.3 }));
+  o.forEach((i) => ev.push({ at: n * STEP_S + 0.1, dur: TOGETHER_S, midi: midiAt(ch, v[i]), k: v[i].k, peak: 0.6 / n }));
+  return { ev, end: n * STEP_S + 0.1 + TOGETHER_S + 0.1, n };
+}
+const planRide = (ch, last) => [{ at: 0, dur: 0.12, midi: midi({ l: ch.tones[last.k].l, a: ch.tones[last.k].a, o: last.from }), k: last.k, peak: 0.22 }, { at: 0.13, dur: 0.42, midi: midi({ l: ch.tones[last.k].l, a: ch.tones[last.k].a, o: last.to }), k: last.k, peak: 0.3 }];   // 옮긴 음: 옛 높이, 새 높이
+function planPad(ch, v, upper) {                                                  // 두 손 패드: 밑음만, 또는 밑음을 뺀 윗음만
+  const o = order(ch, v), pick = upper ? o.slice(1) : o.slice(0, 1);
+  return pick.map((i) => ({ at: 0, dur: 0.7, midi: midiAt(ch, v[i]), k: v[i].k, peak: upper ? 0.5 / pick.length : 0.34 }));
+}
+
+
+// SOURCE seeds.js
+// ═══ 3 SEEDS ═══ 운행 씨앗. 방식, 화음, 처음 배치, 목표만 적는다. 정답, 보기, 까닭, 문장은 엔진과 문제 모델이 만든다
+// ask: low 밑음 찾기 · root 근음 찾기 · both 둘 다 찾기 · make 만들기 · name 이름 붙이기 · same 함정 탐정 · fix 이름표 수리
+// from: 처음 배치(낮은 음부터) · row: 섞인 줄(왼쪽부터 선 순서) · to: 목표({ bass } 가장 낮을 음, { inv } 자리 번호, { sym } 심벌, "keep" 밑음 두고 옮기기)
+// by: "sym"이면 심벌로 답한다 · trap: 뒤집힌 심벌과 밑음을 근음으로 적은 이름을 보기에 넣는다 · b: 견줄 배치 · label: 잘못 붙은 이름표
+// help: 지금 상태를 말해 준다 · roles: false면 구성음 이름을 가린다 · plain: 화음 이름 없이 음만 · blind: 화음 이름을 가린다 · final: 마감 운행
+const DAYS = [
+  { id: "d0", name: "높이 순서 줄 서기", jobs: [
+    { id: "d0-01", ask: "low", chord: "C", from: "C4 E4 G4", plain: true, help: true },
+    { id: "d0-02", ask: "low", chord: "C", from: "E4 G4 C5", plain: true },
+    { id: "d0-03", ask: "low", chord: "C", from: "E4 G4 C5", row: "G4 C5 E4", plain: true },
+    { id: "d0-04", ask: "low", chord: "C", from: "G4 C5 E5", row: "E5 G4 C5", plain: true },
+    { id: "d0-05", ask: "make", chord: "C", from: "C4 E4 G4", to: { bass: "E" }, plain: true, help: true },
+    { id: "d0-06", ask: "low", chord: "CM7", from: "E4 G4 B4 C5", row: "C5 G4 E4 B4", plain: true },
+    { id: "d0-07", ask: "make", chord: "C", from: "C4 E4 G4", to: { bass: "G" }, plain: true, final: true },
+  ] },
+  { id: "d1", name: "근음 이름표", jobs: [
+    { id: "d1-01", ask: "root", chord: "C", from: "C4 E4 G4", help: true },
+    { id: "d1-02", ask: "root", chord: "C", from: "E4 G4 C5", help: true },
+    { id: "d1-03", ask: "both", chord: "C", from: "G4 C5 E5" },
+    { id: "d1-04", ask: "both", chord: "F", from: "F4 A4 C5" },
+    { id: "d1-05", ask: "root", chord: "G", from: "B4 D5 G5" },
+    { id: "d1-06", ask: "low", chord: "Dm", from: "A4 D5 F5" },
+    { id: "d1-07", ask: "both", chord: "Am", from: "C5 E5 A5" },
+    { id: "d1-08", ask: "both", chord: "Em", from: "G4 B4 E5", final: true },
+  ] },
+  { id: "d2", name: "첫 에스컬레이터", jobs: [
+    { id: "d2-01", ask: "make", chord: "C", from: "C4 E4 G4", to: { bass: "E" }, help: true },
+    { id: "d2-02", ask: "name", chord: "C", from: "E4 G4 C5", help: true },
+    { id: "d2-03", ask: "make", chord: "C", from: "C4 E4 G4", to: { inv: 2 }, help: true },
+    { id: "d2-04", ask: "make", chord: "C", from: "G4 C5 E5", to: { inv: 0 } },
+    { id: "d2-05", ask: "name", chord: "F", from: "A4 C5 F5" },
+    { id: "d2-06", ask: "make", chord: "G", from: "G4 B4 D5", to: { inv: 1 } },
+    { id: "d2-07", ask: "name", chord: "G", from: "D5 G5 B5" },
+    { id: "d2-08", ask: "make", chord: "F", from: "F4 A4 C5", to: { inv: 2 }, final: true },
+  ] },
+  { id: "d3", name: "목표 밑음", jobs: [
+    { id: "d3-01", ask: "make", chord: "C", from: "C4 E4 G4", to: { bass: "G" } },
+    { id: "d3-02", ask: "make", chord: "Am", from: "A4 C5 E5", to: { bass: "C" } },
+    { id: "d3-03", ask: "name", chord: "Am", from: "E4 A4 C5" },
+    { id: "d3-04", ask: "make", chord: "Dm", from: "F4 A4 D5", to: { bass: "D" } },
+    { id: "d3-05", ask: "both", chord: "Dm", from: "A4 D5 F5" },
+    { id: "d3-06", ask: "make", chord: "Em", from: "E4 G4 B4", to: { inv: 1 }, roles: false },
+    { id: "d3-07", ask: "name", chord: "G", from: "B4 D5 G5", roles: false },
+    { id: "d3-08", ask: "make", chord: "Am", from: "C4 E4 A4", to: { inv: 2 }, final: true },
+  ] },
+  { id: "d4", name: "7화음의 네 자리", jobs: [
+    { id: "d4-01", ask: "both", chord: "CM7", from: "C4 E4 G4 B4" },
+    { id: "d4-02", ask: "make", chord: "CM7", from: "C4 E4 G4 B4", to: { bass: "E" }, help: true },
+    { id: "d4-03", ask: "name", chord: "CM7", from: "G4 B4 C5 E5" },
+    { id: "d4-04", ask: "make", chord: "CM7", from: "C5 E5 G5 B5", to: { inv: 3 } },
+    { id: "d4-05", ask: "name", chord: "G7", from: "F4 G4 B4 D5" },
+    { id: "d4-06", ask: "make", chord: "Dm7", from: "D4 F4 A4 C5", to: { inv: 2 } },
+    { id: "d4-07", ask: "root", chord: "Am7", from: "E4 G4 A4 C5" },
+    { id: "d4-08", ask: "make", chord: "G7", from: "G4 B4 D5 F5", to: { inv: 1 }, final: true },
+  ] },
+  { id: "d5", name: "슬래시 이름표", jobs: [
+    { id: "d5-01", ask: "name", chord: "C", from: "E4 G4 C5", by: "sym", help: true },
+    { id: "d5-02", ask: "make", chord: "C", from: "C4 E4 G4", to: { sym: "C/G" } },
+    { id: "d5-03", ask: "name", chord: "CM7", from: "B4 C5 E5 G5", by: "sym" },
+    { id: "d5-04", ask: "make", chord: "Am", from: "A4 C5 E5", to: { sym: "Am/C" } },
+    { id: "d5-05", ask: "name", chord: "F", from: "C5 F5 A5", by: "sym", trap: true },
+    { id: "d5-06", ask: "make", chord: "G7", from: "G4 B4 D5 F5", to: { sym: "G7/F" } },
+    { id: "d5-07", ask: "name", chord: "Am", from: "C4 E4 A4", by: "sym", trap: true },
+    { id: "d5-08", ask: "make", chord: "FM7", from: "F4 A4 C5 E5", to: { sym: "FM7/E" }, final: true },
+  ] },
+  { id: "d6", name: "함정 탐정", free: true, jobs: [
+    { id: "d6-01", ask: "same", chord: "C", from: "E4 G4 C5", b: "E4 C5 G5", help: true },
+    { id: "d6-02", ask: "same", chord: "C", from: "C4 E4 G4", b: "E4 G4 C5" },
+    { id: "d6-03", ask: "make", chord: "C", from: "C4 E4 G4", to: "keep" },
+    { id: "d6-04", ask: "name", chord: "C", from: "C4 G4 E5" },
+    { id: "d6-05", ask: "same", chord: "Am", from: "C4 E4 A4", b: "C5 E5 A5" },
+    { id: "d6-06", ask: "same", chord: "G7", from: "D4 F4 G4 B4", b: "D4 G4 B4 F5" },
+    { id: "d6-07", ask: "name", chord: "Dm7", from: "F4 C5 D5 A5" },
+    { id: "d6-08", ask: "same", chord: "C", from: "E4 C5 G5", b: "G4 C5 E5", final: true },
+  ] },
+  { id: "d7", name: "이름표 수리점", free: true, jobs: [
+    { id: "d7-01", ask: "fix", chord: "Am", from: "C4 E4 A4", label: "Am/E", help: true },
+    { id: "d7-02", ask: "root", chord: "F", from: "A4 C5 F5", blind: true, help: true },
+    { id: "d7-03", ask: "fix", chord: "C", from: "E4 G4 C5", label: "E" },
+    { id: "d7-04", ask: "make", chord: "D", from: "D4 F#4 A4", to: { sym: "D/F#" } },
+    { id: "d7-05", ask: "root", chord: "Am7", from: "E4 G4 A4 C5", blind: true },
+    { id: "d7-06", ask: "fix", chord: "G7", from: "F4 G4 B4 D5", label: "F/G" },
+    { id: "d7-07", ask: "name", chord: "Bb", from: "D4 F4 Bb4", by: "sym", trap: true },
+    { id: "d7-08", ask: "fix", chord: "Eb", from: "Bb4 Eb5 G5", label: "Eb/G", final: true },
+  ] },
+];
+// 스파이크의 하루: 조작마다 하나씩 열 건
+const SPIKE = { id: "sp", name: "에스컬레이터 스파이크", jobs: [
+  { id: "sp-1", ask: "low", chord: "C", from: "E4 G4 C5", row: "G4 C5 E4", plain: true },
+  { id: "sp-2", ask: "both", chord: "C", from: "G4 C5 E5" },
+  { id: "sp-3", ask: "make", chord: "C", from: "C4 E4 G4", to: { bass: "E" }, help: true },
+  { id: "sp-4", ask: "make", chord: "F", from: "F4 A4 C5", to: { inv: 2 } },
+  { id: "sp-5", ask: "name", chord: "CM7", from: "G4 B4 C5 E5" },
+  { id: "sp-6", ask: "make", chord: "G7", from: "G4 B4 D5 F5", to: { sym: "G7/F" } },
+  { id: "sp-7", ask: "same", chord: "C", from: "E4 G4 C5", b: "E4 C5 G5" },
+  { id: "sp-8", ask: "make", chord: "C", from: "C4 E4 G4", to: "keep", free: true },
+  { id: "sp-9", ask: "root", chord: "F", from: "A4 C5 F5", blind: true, help: true },
+  { id: "sp-10", ask: "fix", chord: "Am", from: "C4 E4 A4", label: "Am/E", final: true },
+] };
+
+
+// SOURCE state.js
+// ═══ 4 STATE + STORAGE ═══ v1 saves and one state transition point.
+const $ = (id) => document.getElementById(id);
+const SAVE_KEY = "ces_save_v1";
+function defaultSave() {
+  return {
+    version: 1,
+    settings: { volume: 1, muted: false, bassWord: "밑음", invWord: "자리바꿈", motion: "system", soundChecked: false },
+    days: {}, cards: [], scenes: [], causes: {}, stats: { jobs: 0, full: 0, pads: 0 }, active: null,
+  };
+}
+const copyData = (value) => JSON.parse(JSON.stringify(value));
+const isRecord = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+const isCount = (value) => Number.isInteger(value) && value >= 0;
+function normalizeSave(raw) {
+  if (!isRecord(raw) || raw.version !== 1) throw new Error("지원하지 않는 저장 형식");
+  for (const key of ["settings", "days", "causes", "stats"]) if (raw[key] !== undefined && !isRecord(raw[key])) throw new Error("손상된 저장 항목");
+  for (const key of ["cards", "scenes"]) if (raw[key] !== undefined && (!Array.isArray(raw[key]) || raw[key].some((x) => typeof x !== "string"))) throw new Error("손상된 목록");
+  const value = defaultSave();
+  value.settings = Object.assign(value.settings, raw.settings || {});
+  const settings = value.settings;
+  if (typeof settings.volume !== "number" || !Number.isFinite(settings.volume)) throw new Error("손상된 음량");
+  settings.volume = Math.max(0, Math.min(1, settings.volume));
+  if (!["밑음", "베이스"].includes(settings.bassWord) || !["자리바꿈", "전위"].includes(settings.invWord) || !["system", "reduced", "full"].includes(settings.motion)) throw new Error("손상된 설정");
+  if (typeof settings.muted !== "boolean" || typeof settings.soundChecked !== "boolean") throw new Error("손상된 설정 값");
+  for (const [id, day] of Object.entries(raw.days || {})) {
+    if (!/^d[0-7]$/.test(id) || !isRecord(day)) throw new Error("손상된 운행일");
+    const stored = Object.assign({ passed: false, stamp: 0, runs: 0, best: 0 }, day);
+    if (typeof stored.passed !== "boolean" || ![0, 1, 2].includes(stored.stamp) || !isCount(stored.runs) || !isCount(stored.best) || stored.best > DAYS[+id[1]].jobs.length) throw new Error("손상된 운행일 기록");
+    value.days[id] = stored;
+  }
+  value.cards = [...new Set(raw.cards || [])];
+  value.scenes = [...new Set(raw.scenes || [])];
+  for (const [code, count] of Object.entries(raw.causes || {})) {
+    if (!isCount(count)) throw new Error("손상된 까닭 기록");
+    value.causes[code] = count;
+  }
+  value.stats = Object.assign(value.stats, raw.stats || {});
+  if (Object.values(value.stats).some((n) => !isCount(n))) throw new Error("손상된 통계");
+  if (raw.active !== undefined && raw.active !== null) {
+    const active = raw.active, day = DAYS.find((d) => d.id === active.day);
+    if (!isRecord(active) || !day || !isCount(active.idx) || active.idx >= day.jobs.length || !Array.isArray(active.results) || active.results.length > day.jobs.length || active.results.some((r) => !["full", "half"].includes(r))) throw new Error("손상된 이어하기");
+    const phase = active.phase || "original", review = active.review || [], reviewPos = active.reviewPos || 0;
+    if (!["original", "review"].includes(phase) || !Array.isArray(review) || review.some((i) => !isCount(i) || i >= day.jobs.length - 1) || !isCount(reviewPos) || reviewPos > review.length) throw new Error("손상된 복습 위치");
+    value.active = Object.assign({}, active, { phase, review, reviewPos, newCards: Array.isArray(active.newCards) ? active.newCards.filter((x) => typeof x === "string") : [] });
+  }
+  return value;
+}
+function createSaveStore(storage) {
+  let memory = null;
+  const store = {
+    available: !!storage,
+    defaults: defaultSave,
+    load() {
+      let raw = memory;
+      if (store.available) {
+        try { raw = storage.getItem(SAVE_KEY); }
+        catch (error) { store.available = false; }
+      }
+      if (!raw) return defaultSave();
+      try { return normalizeSave(JSON.parse(raw)); }
+      catch (error) {
+        if (store.available) {
+          try { storage.setItem(SAVE_KEY + "_backup", raw); }
+          catch (backupError) { store.available = false; }
+        }
+        memory = JSON.stringify(defaultSave());
+        if (store.available) {
+          try { storage.setItem(SAVE_KEY, memory); }
+          catch (writeError) { store.available = false; }
+        }
+        return defaultSave();
+      }
+    },
+    save(value) {
+      memory = JSON.stringify(value);
+      if (store.available) {
+        try { storage.setItem(SAVE_KEY, memory); }
+        catch (error) { store.available = false; }
+      }
+      return value;
+    },
+    reset() { return store.save(defaultSave()); },
+  };
+  return store;
+}
+let browserStorage = null;
+try { browserStorage = window.localStorage; } catch (error) { /* In-memory sessions remain available. */ }
+const Store = createSaveStore(browserStorage);
+let saveData = Store.load();
+const App = {
+  day: DAYS[0], idx: 0, m: null, s: null, results: [], screen: "title", playing: false,
+  session: null, sceneId: null, sceneFrame: 0, sceneReturn: "book", closeData: null, newCards: [],
+};
+function setState(patch) { Object.assign(App, patch); render(); }
+function setFlow(patch) {
+  if (!patch) return;
+  let session = App.session;
+  if (session && App.screen === "run" && patch.msg && patch.msg.tone === "bad" && patch.msg.code !== "mend") {
+    const code = patch.msg.code;
+    session = Object.assign({}, session, { pendingCauses: Object.assign({}, session.pendingCauses, { [code]: (session.pendingCauses[code] || 0) + 1 }) });
+  }
+  setState({ s: Object.assign({}, App.s, patch), session });
+}
+function stopCurrentAudio() { if (typeof stopRun === "function") stopRun(false); }
+function freshSession() { return { phase: "original", review: [], reviewPos: 0, newCards: [], pendingCauses: {}, pendingPads: 0 }; }
+function storedSession(active) {
+  return Object.assign(freshSession(), { phase: active.phase || "original", review: active.review || [], reviewPos: active.reviewPos || 0, newCards: active.newCards || [] });
+}
+function writeActive(day, idx, results, session, scene) {
+  saveData.active = {
+    day: day.id, idx, results: results.map((r) => typeof r === "string" ? r : r.r), phase: session.phase,
+    review: session.review.slice(), reviewPos: session.reviewPos, newCards: session.newCards.slice(), scene: scene || null,
+  };
+  Store.save(saveData);
+}
+function openJob(day, idx, results, session) {
+  stopCurrentAudio();
+  const m = build(day.jobs[idx], day);
+  setState({ day, idx, m, s: F.start(m), results: results || App.results, session: session || App.session || freshSession(), screen: "run", playing: false, sceneId: null });
+}
+function isDayUnlocked(id) {
+  const n = DAYS.findIndex((d) => d.id === id);
+  return n === 0 || n > 0 && !!(saveData.days[DAYS[n - 1].id] && saveData.days[DAYS[n - 1].id].passed);
+}
+const SCENE_AFTER = { "d0-03": "S1", "d1-02": "S2", "d2-01": "S3", "d2-04": "S4", "d7-01": "S8" };
+const SCENE_BEFORE = { d4: "S5", d5: "S6", d6: "S7" };
+const SCENE_CARDS = { S1: ["bass", "height"], S2: ["root", "constant"], S4: ["cycle"], S6: ["slash"], S7: ["upper"], S8: ["gap"] };
+function addCards(ids, session) {
+  const newCards = session.newCards.slice();
+  for (const id of ids) if (!saveData.cards.includes(id)) { saveData.cards.push(id); newCards.push(id); }
+  return Object.assign({}, session, { newCards });
+}
+function startDay(id) {
+  const day = DAYS.find((d) => d.id === id);
+  if (!day || !isDayUnlocked(id)) return false;
+  setState({ debug: false });
+  const session = freshSession(), scene = SCENE_BEFORE[id];
+  writeActive(day, 0, [], session, scene && !saveData.scenes.includes(scene) ? scene : null);
+  openJob(day, 0, [], session);
+  if (saveData.active.scene) showScene(saveData.active.scene, "run");
+  if (id === "d0" && !saveData.settings.soundChecked) {
+    setState({ soundCheck: true });
+    if (typeof sound === "function") sound([{ at: 0, dur: .7, midi: 60, peak: .34 }]);
+  }
+  return true;
+}
+function resumeDay() {
+  setState({ debug: false });
+  const active = saveData.active;
+  if (!active) return goScreen("map");
+  const day = DAYS.find((d) => d.id === active.day);
+  const results = active.results.map((r, i) => ({ id: day.jobs[i].id, tag: ASK_KO[day.jobs[i].ask], r }));
+  openJob(day, active.idx, results, storedSession(active));
+  if (active.scene) showScene(active.scene, "run");
+}
+function goScreen(screen) {
+  stopCurrentAudio();
+  setState({ screen, playing: false, confirmReset: false });
+}
+function showScene(id, returnScreen = "book") {
+  stopCurrentAudio();
+  setState({ screen: "scene", sceneId: id, sceneFrame: 0, sceneReturn: returnScreen, playing: false });
+}
+function sceneContinue() {
+  if (App.screen !== "scene") return;
+  const session = App.session || freshSession();
+  const updated = App.sceneReturn === "run" ? addCards(SCENE_CARDS[App.sceneId] || [], session) : session;
+  if (App.sceneReturn === "run") {
+    if (!saveData.scenes.includes(App.sceneId)) saveData.scenes.push(App.sceneId);
+    writeActive(App.day, App.idx, App.results, updated, null);
+    openJob(App.day, App.idx, App.results, updated);
+  } else goScreen(App.sceneReturn || "book");
+}
+const continueScene = sceneContinue;
+function recordPad() {
+  if (App.screen !== "run" || !App.session) return;
+  setState({ session: Object.assign({}, App.session, { pendingPads: App.session.pendingPads + 1 }) });
+}
+function commitRunStats(result, session) {
+  for (const [code, count] of Object.entries(session.pendingCauses)) saveData.causes[code] = (saveData.causes[code] || 0) + count;
+  saveData.stats.pads += session.pendingPads;
+  if (session.phase === "original") {
+    saveData.stats.jobs++;
+    if (result === "full") saveData.stats.full++;
+  }
+  return Object.assign({}, session, { pendingCauses: {}, pendingPads: 0 });
+}
+function finishDay(results, session) {
+  const full = results.filter((r) => r.r === "full").length, total = App.day.jobs.length;
+  const passed = full >= Math.ceil(total * 0.8), stamp = full === total ? 2 : passed ? 1 : 0;
+  const previous = saveData.days[App.day.id] || { passed: false, stamp: 0, runs: 0, best: 0 };
+  saveData.days[App.day.id] = { passed: previous.passed || passed, stamp: Math.max(previous.stamp, stamp), runs: previous.runs + 1, best: Math.max(previous.best, full) };
+  const closeData = { day: App.day.id, full, total, passed, stamp, newCards: session.newCards.slice(), results };
+  saveData.lastClose = closeData;
+  saveData.active = null;
+  Store.save(saveData);
+  stopCurrentAudio();
+  setState({ results, session, closeData, newCards: session.newCards.slice(), screen: "close", playing: false });
+}
+function nextJob() {
+  if (App.screen !== "run" || !App.m || App.m.steps[App.s.step].kind !== "listen") return;
+  const day = App.day, currentIndex = App.idx, result = F.result(App.s);
+  if (App.debug) {
+    const results = App.results.concat([{ id: App.m.id, tag: App.m.tag, r: result }]);
+    if (currentIndex + 1 < day.jobs.length) openJob(day, currentIndex + 1, results, freshSession());
+    else {
+      stopCurrentAudio();
+      setState({ results, screen: "close", playing: false, closeData: null });
+    }
+    return;
+  }
+  let session = commitRunStats(result, App.session || freshSession()), results = App.results.slice();
+  if (session.phase === "original") {
+    results.push({ id: App.m.id, tag: App.m.tag, r: result });
+    if (result === "full" && ["make", "name"].includes(App.m.ask) && !App.m.plain) session = addCards(["inv" + inversion(App.m.ch, App.s.v)], session);
+  }
+  if (session.phase === "original" && currentIndex === day.jobs.length - 1) return finishDay(results, session);
+  let nextIndex = currentIndex + 1;
+  if (session.phase === "review") {
+    const reviewPos = session.reviewPos + 1;
+    session = Object.assign({}, session, { reviewPos });
+    if (reviewPos < session.review.length) nextIndex = session.review[reviewPos];
+    else { nextIndex = day.jobs.length - 1; session = Object.assign({}, session, { phase: "original" }); }
+  } else if (nextIndex === day.jobs.length - 1) {
+    const review = results.map((r, i) => r.r === "half" ? i : -1).filter((i) => i >= 0);
+    if (review.length) { session = Object.assign({}, session, { phase: "review", review, reviewPos: 0 }); nextIndex = review[0]; }
+  }
+  const scene = session.phase === "original" && SCENE_AFTER[day.jobs[currentIndex].id];
+  const pendingScene = scene && !saveData.scenes.includes(scene) ? scene : null;
+  writeActive(day, nextIndex, results, session, pendingScene);
+  openJob(day, nextIndex, results, session);
+  if (pendingScene) showScene(pendingScene, "run");
+}
+
+
+// SOURCE stage.js
+// Inline music symbols use the same artwork in notes, cards, choices and prose.
+function escapeMusicText(text) {
+  return String(text).replace(/[&<>"']/g, c => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"}[c]));
+}
+function musicHTML(text) {
+  const symbols = {
+    "♯": '<svg class="accidental" data-symbol="♯" viewBox="0 0 12 22" aria-hidden="true" focusable="false"><path d="M4 2v18M8 1v18M1 8l10-3v4L1 12zM1 15l10-3v4L1 19z"/></svg>',
+    "♭": '<svg class="accidental" data-symbol="♭" viewBox="0 0 11 22" aria-hidden="true" focusable="false"><path d="M3 1v19C13 15 11 7 3 12M3 12c4-2 5 2 0 6"/></svg>',
+    "𝄪": '<svg class="accidental" data-symbol="𝄪" viewBox="0 0 14 22" aria-hidden="true" focusable="false"><path d="M2 6l10 10M12 6L2 16M2 6h3M2 6v3M12 6H9M12 6v3M2 16h3M2 16v-3M12 16H9M12 16v-3"/></svg>',
+    "𝄫": '<svg class="accidental double-flat" data-symbol="𝄫" viewBox="0 0 18 22" aria-hidden="true" focusable="false"><path d="M2 1v19C12 15 10 7 2 12M2 12c4-2 5 2 0 6M10 1v19C20 15 18 7 10 12M10 12c4-2 5 2 0 6"/></svg>'
+  };
+  const spoken = {"♯":"샵", "♭":"플랫", "𝄪":"겹샵", "𝄫":"겹플랫"};
+  return Array.from(String(text)).map(c => symbols[c] ? `<span class="music-acc" role="img" aria-label="${spoken[c]}">${symbols[c]}</span>` : escapeMusicText(c)).join("");
+}
+function musicTextOf(element) {
+  return Array.from(element.childNodes).map(node => {
+    if (node.nodeType === 3) return node.textContent;
+    if (node.dataset && node.dataset.symbol) return node.dataset.symbol;
+    return musicTextOf(node);
+  }).join("");
+}
+function drawAccidental(a, x, y, size) {
+  if (!a) return "";
+  const char = ACC_TXT[a + 2];
+  const svg = musicHTML(char).match(/<svg[\s\S]*?<\/svg>/)[0];
+  return svg.replace("<svg ", `<svg x="${x}" y="${y - size * 1.4}" style="width:${size * 1.6}px;height:${size * 2.8}px" `);
+}
+// ═══ 5 VIEW ═══ 틀은 한 번만 만든다. 무대 안은 그릴 내용이 바뀔 때만 다시 그린다
+let G = null, mounted = "", chipsKey = "", dynKey = "";
+const CLEF = "M0.25 3.65C-0.8 4.1-1.35 2.65-0.35 2.4C0.65 2.2 1.05 3.35 0.25 3.65C1.0 3.3 0.5 0.6 0.1-1.8C-0.3-4.1-0.6-6.2 0.15-7.1C1.0-6.45 1.25-5.1 0.65-4.4C0.0-3.6-1.6-2.4-1.6-1.0C-1.6 0.6-0.05 1.25 1.1 0.65C2.35-0.05 1.15-1.8 0.05-1.25C-0.85-0.8-0.65 0.35 0.2 0.5";
+function layout() {                                                               // 무대의 치수: 오선 한 자리의 높이 s를 무대 높이에서 정한다. 한 무대 한 배율
+  const st = $("stage"), W = st.clientWidth, H = st.clientHeight, n = App.m.ch.n;
+  const kbH = 46, areaH = H - kbH - 6, th = 44, padH = 22;
+  const s = Math.max(8, Math.min(18, Math.floor((areaH - th - padH - 2) / (FRAME.hi - FRAME.lo)), Math.floor((W - 216) / 8.6)));   // 높이와 폭에서 정한다. 음 넷이 44px 넘게 서야 한다
+  const top = Math.max(1, Math.floor((areaH - (th + (FRAME.hi - FRAME.lo) * s + padH)) / 2));
+  const clefW = Math.round(s * 3.3), blockW = Math.round(s * 5.3), x0 = clefW + blockW + 6, colW = (W - x0 - 2) / n, tw = Math.min(54, Math.floor(colW - 6));
+  return { W, H, n, kbH, kbY: H - kbH, s, th, tw, top, clefW, blockW, x0, colW, floor: top + th + (FRAME.hi - FRAME.lo) * s + 3,
+    y: (p) => top + th / 2 + (FRAME.hi - p) * s, x: (c) => x0 + colW * (c + 0.5), kw: W / (FRAME.hi - FRAME.lo + 1) };
+}
+const whiteAt = (i) => ({ l: i % STEPS, a: 0, o: note("C4").o + Math.floor(i / STEPS) });   // 무대의 i번째 흰건반
+function keyOf(mid) {                                                             // 건반 번호 → 건반 띠의 자리. 흰건반이면 그 칸, 검은건반이면 왼쪽 흰건반의 칸
+  for (let i = 0; i <= FRAME.hi - FRAME.lo; i++) { const w = midi(whiteAt(i)); if (w === mid) return { i, black: false }; if (w + 1 === mid && MAJOR[i % STEPS] === 2) return { i, black: true }; }
+  return null;
+}
+function drawStatic() {
+  const g = G, lo = FRAME.lo;
+  let h = "";
+  for (const r of [2, 4, 6, 8, 10]) h += `<line class="staffline" x1="3" x2="${g.W - 3}" y1="${g.y(lo + r)}" y2="${g.y(lo + r)}"/>`;
+  h += `<line class="divider" x1="${g.x0 - 3}" x2="${g.x0 - 3}" y1="${g.y(lo + 10)}" y2="${g.y(lo + 2)}"/>`;
+  h += `<g transform="translate(${3 + g.clefW * 0.56} ${g.y(lo + 4)}) scale(${g.s} ${g.s})"><path class="clef" d="${CLEF}" stroke-width="0.28"/></g>`;
+  for (let i = 0; i <= FRAME.hi - lo; i++) h += `<rect class="wkey" x="${i * g.kw}" y="${g.kbY}" width="${g.kw}" height="${g.kbH}"/>`;
+  for (let i = 0; i < FRAME.hi - lo; i++) if (MAJOR[i % STEPS] === 2) h += `<rect class="bkey" x="${(i + 1) * g.kw - g.kw * 0.3}" y="${g.kbY}" width="${g.kw * 0.6}" height="${g.kbH * 0.58}" rx="2"/>`;
+  $("bgStatic").innerHTML = h;
+}
+const ROLE_VAR = (k) => `var(--r${k})`;
+function drawDyn(w) {                                                             // 덧줄, 쌓은 화음, 밑음 자리의 빛, 틈, 건반의 불
+  const g = G, ch = App.m.ch, lo = FRAME.lo, o = order(ch, w.v);
+  let h = "";
+  const ledger = (cx, half, p) => { const r = p - lo; let s = ""; if (r <= 0) s += `<line class="ledger" x1="${cx - half}" x2="${cx + half}" y1="${g.y(lo)}" y2="${g.y(lo)}"/>`; for (const q of [12, 14]) if (r >= q) s += `<line class="ledger" x1="${cx - half}" x2="${cx + half}" y1="${g.y(lo + q)}" y2="${g.y(lo + q)}"/>`; return s; };
+  const rx = g.s * 1.22, ry = g.s * 0.9, bx = g.clefW + g.blockW * 0.36;
+  let prev = null, shifted = false;
+  o.forEach((i) => {                                                              // 쌓은 화음(세로): 2도로 붙은 음은 옆으로 비켜 적는다
+    const p = posAt(ch, w.v[i]), k = w.v[i].k; shifted = prev !== null && p - prev === 1 && !shifted; prev = p;
+    const cx = bx + (shifted ? rx * 2 - 2 : 0);
+    h += ledger(cx, rx + 5, p) + `<ellipse class="head" cx="${cx}" cy="${g.y(p)}" rx="${rx}" ry="${ry}" transform="rotate(-18 ${cx} ${g.y(p)})" style="fill:${w.roles ? ROLE_VAR(k) : "var(--plainTok)"}"/>`;
+    h += drawAccidental(ch.tones[k].a, cx - rx - g.s * 1.65, g.y(p), g.s);
+    h += ledger(g.x(w.col[k]), g.tw / 2 + 6, p);
+  });
+  if (w.esc) for (const d of [1, -1]) {                                           // 에스컬레이터: 탈 음에서 내릴 자리까지 비스듬한 길. 무대 밖이면 그리지 않는다
+    const i = w.rider !== null ? w.rider : d > 0 ? o[0] : o[o.length - 1], nv = move(w.v, i, d), k = w.v[i].k; if (!inFrame(ch, nv)) continue;
+    const x1 = g.x(w.col[k]), y1 = g.y(posAt(ch, w.v[i])), x2 = g.x(order(ch, nv).indexOf(i)), y2 = g.y(posAt(ch, nv[i]));
+    const len = Math.hypot(x2 - x1, y2 - y1) || 1, ux = (x2 - x1) / len, uy = (y2 - y1) / len, ax = x2 - ux * 9, ay = y2 - uy * 9;
+    let stair = `M${x1} ${y1}`;
+    const stairCount = 7;
+    for (let step = 1; step <= stairCount; step++) {
+      const px = x1 + (ax - x1) * step / stairCount;
+      const py = y1 + (ay - y1) * step / stairCount;
+      stair += `H${px}V${py}`;
+    }
+    h += `<g class="esc ${d > 0 ? "up" : "down"}"><line class="band" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><path class="steps" d="${stair}"/><line class="rail" x1="${x1}" y1="${y1 - 8}" x2="${ax}" y2="${ay - 8}"/><path class="tip" d="M${x2} ${y2}L${ax - uy * 6} ${ay + ux * 6}L${ax + uy * 6} ${ay - ux * 6}Z"/></g>`;
+  }
+  if (w.lamp) { const yb = g.y(posAt(ch, w.v[o[0]])) + g.th / 2; h += `<rect class="beam" x="${g.x(0) - 6}" y="${yb}" width="12" height="${Math.max(0, g.floor - yb)}"/>`; }
+  if (w.gaps) gaps(ch, w.v).forEach((d, j) => { const a = w.v[o[j]], b = w.v[o[j + 1]], cx = (g.x(w.col[a.k]) + g.x(w.col[b.k])) / 2, cy = (g.y(posAt(ch, a)) + g.y(posAt(ch, b))) / 2; h += `<g class="gap"><rect x="${cx - 15}" y="${cy - 9}" width="30" height="18" rx="9"/><text x="${cx}" y="${cy + 4.5}">${d}도</text></g>`; });
+  o.forEach((i, r) => {                                                           // 건반 띠: 지금 울릴 건반. 가장 왼쪽이 밑음
+    const key = keyOf(midiAt(ch, w.v[i])), k = w.v[i].k; if (!key) return;
+    const fill = w.roles ? ROLE_VAR(k) : "#ffe9a8";
+    h += key.black ? `<rect x="${(key.i + 1) * g.kw - g.kw * 0.3}" y="${g.kbY}" width="${g.kw * 0.6}" height="${g.kbH * 0.58}" rx="2" style="fill:${fill};stroke:var(--ink);stroke-width:1.5"/>` : `<rect x="${key.i * g.kw + 1}" y="${g.kbY + g.kbH * 0.6}" width="${g.kw - 2}" height="${g.kbH * 0.4 - 1}" style="fill:${fill};stroke:var(--ink);stroke-width:1"/>`;
+    const mark = (r === 0 && w.lamp ? "밑" : "") || (k === 0 && w.roles ? "근" : "");
+    if (mark && !key.black) h += `<text class="keymark" x="${(key.i + 0.5) * g.kw}" y="${g.kbY + g.kbH - 5}">${mark}</text>`;
+  });
+  $("bgDyn").innerHTML = h;
+}
+function mount(m) {                                                               // 문제가 바뀔 때 한 번: 음 단추를 만든다
+  $("tokens").innerHTML = m.ch.tones.map((_, k) => `<button type="button" class="tok" data-k="${k}"><b></b><small></small></button>`).join("");
+  mounted = m.id; chipsKey = ""; dynKey = ""; G = null;
+}
+function chipsFor(m, s, w) {                                                      // 조작부의 보기: 고르기에서는 음, 그 밖에는 보기
+  const st = m.steps[s.step];
+  if (st.kind === "pick") return w.col.map((c, k) => ({ c, k })).sort((a, b) => a.c - b.c).map(({ k }) => ({ id: k, label: pcName(m.ch.tones[k]) }));
+  if (st.choices) return st.choices.map((c, i) => ({ id: i, label: c.label }));
+  return [];
+}
+function renderRun() {
+  const { m, s } = App, root = $("app");
+  root.classList.toggle("narrow", window.innerHeight < 620);
+  $("dayName").textContent = App.screen === "lab" ? "자유 실험실" : App.day.name;
+  $("dots").innerHTML = App.day.jobs.map((_, i) => `<i class="${i < App.results.length ? App.results[i].r : i === App.idx && App.screen === "run" ? "now" : ""}"></i>`).join("");
+  $("dots").setAttribute("aria-label", `운행 ${App.day.jobs.length}건 가운데 ${Math.min(App.idx + 1, App.day.jobs.length)}번째`);
+  if (mounted !== m.id) mount(m);
+  const w = currentView(), st = m.steps[s.step], L = st.kind === "listen", ch = m.ch;
+  $("askTag").textContent = translateWords(m.tag); $("askText").innerHTML = musicHTML(translateWords(m.text));
+  $("plate").className = (w.plate ? "" : "none") + (w.bad ? " is-bad" : "");
+  $("plateName").innerHTML = musicHTML(w.plate || "–"); $("plateSub").textContent = w.bad ? "잘못 붙음" : w.sub || (w.plate === "?" ? "가려짐" : "");
+  $("plate").setAttribute("aria-label", w.plate ? "이름표 " + w.plate : "");
+  const key = [$("stage").clientWidth, $("stage").clientHeight, ch.n].join("x");
+  if (!G || G.key !== key) { G = layout(); G.key = key; drawStatic(); dynKey = ""; }
+  const g = G, o = order(ch, w.v);
+  document.querySelectorAll("#tokens .tok").forEach((el) => {
+    const k = +el.dataset.k, x = w.v[k], nm = pcName(ch.tones[k]);
+    el.style.width = g.tw + "px"; el.style.height = g.th + "px";
+    el.style.transform = `translate(${g.x(w.col[k]) - g.tw / 2}px, ${g.y(posAt(ch, x)) - g.th / 2}px)`;
+    el.firstChild.innerHTML = musicHTML(nm); el.lastChild.textContent = w.roles ? degKo(k) : ""; el.lastChild.hidden = !w.roles;
+    el.className = "tok" + (w.roles ? " r" + k : "") + (s.sel === k && w.canTap ? " is-sel" : "") + (st.kind === "pick" && s.off.includes(k) && !s.fixed ? " is-off" : "");
+    el.disabled = !w.canTap || (st.kind === "pick" && s.off.includes(k));
+    el.setAttribute("aria-label", pcSay(ch.tones[k]) + " " + x.o + (w.roles ? ", " + degKo(k) : "") + (w.lamp && k === w.bass ? (m.plain ? ", 가장 낮은 음" : ", " + translateWords("밑음")) : ""));
+    if (w.canTap) el.setAttribute("aria-pressed", String(s.sel === k)); else el.removeAttribute("aria-pressed");
+  });
+  const lamp = $("lamp"), lw = m.plain ? 62 : 44;
+  lamp.hidden = !w.sorted; lamp.className = w.lamp ? "is-lit" : ""; lamp.textContent = w.lamp ? (m.plain ? "가장 낮음" : translateWords("밑음")) : "?";
+  lamp.style.width = lw + "px"; lamp.style.transform = `translate(${g.x(0) - lw / 2}px, ${g.floor}px)`;
+  const dk = JSON.stringify([w.v, w.col, w.roles, w.lamp, w.gaps, w.esc, w.rider]);
+  if (dk !== dynKey) { dynKey = dk; drawDyn(w); }
+  $("readout").innerHTML = musicHTML(translateWords(s.msg.text)); $("readout").className = s.msg.tone;
+  // 조작부: 묶음을 미리 두고 보이기만 바꾼다
+  const ride = st.kind === "ride", tool = !!st.tool, chips = chipsFor(m, s, w), ck = m.id + ":" + s.step + ":" + chips.map((c) => c.id + translateWords(c.label)).join(",");
+  $("btnA").hidden = $("btnB").hidden = w.ab < 0;
+  $("btnA").className = "seg" + (w.ab === 0 ? " is-sel" : ""); $("btnB").className = "seg" + (w.ab === 1 ? " is-sel" : "");
+  $("btnA").setAttribute("aria-pressed", String(w.ab === 0)); $("btnB").setAttribute("aria-pressed", String(w.ab === 1));
+  $("btnDown").hidden = $("btnUp").hidden = !(ride || tool);
+  $("btnDown").className = $("btnUp").className = "ride" + (tool ? " mini" : "");
+  $("btnDown").lastElementChild.hidden = $("btnUp").lastElementChild.hidden = tool;
+  $("btnDown").setAttribute("aria-label", "내리기"); $("btnUp").setAttribute("aria-label", "올리기");
+  $("btnReset").hidden = !ride;
+  $("chips").hidden = !chips.length;
+  if (chips.length && ck !== chipsKey) { chipsKey = ck; $("chips").innerHTML = chips.map((c) => `<button type="button" class="chip" data-id="${c.id}">${musicHTML(translateWords(c.label))}</button>`).join(""); }
+  const cur = st.kind === "pick" ? s.sel : s.choice;
+  document.querySelectorAll("#chips .chip").forEach((el) => { const id = +el.dataset.id, off = s.off.includes(id) && !(s.fixed && id === cur); el.className = "chip" + (id === cur ? " is-sel" : "") + (off ? " is-off" : ""); el.disabled = off; el.setAttribute("aria-pressed", String(id === cur)); });
+  $("padBass").hidden = $("padUpper").hidden = !L;
+  $("padBass").textContent = m.plain ? "낮은 음 치기" : translateWords("밑음 치기");
+  $("btnHear").textContent = L ? "다시 듣기" : "듣기";
+  $("btnOk").textContent = L ? (App.idx + 1 < App.day.jobs.length ? "다음" : "마감하기") : "확정";
+}
+// Run the identity check against the same note buttons used by the lesson.
+function auditTokenIdentity() {
+  if (!App.m || !App.s) return false;
+  renderRun();
+  const before = Array.from($("tokens").children);
+  renderRun();
+  const after = Array.from($("tokens").children);
+  return before.length === App.m.ch.n && before.every((node, i) => node === after[i]);
+}
+
+function auditRenderedTheory() {
+  if (!App.m || !App.s) return false;
+  renderRun();
+  const w = currentView(), ch = App.m.ch;
+  const tokens = Array.from($("tokens").children);
+  return tokens.length === ch.n && tokens.every(el => {
+    const k = Number(el.dataset.k);
+    return musicTextOf(el.firstChild) === pcName(ch.tones[k]) &&
+      el.lastChild.textContent === (w.roles ? degKo(k) : "");
+  }) && musicTextOf($("plateName")) === (w.plate || "–");
+}
+
+
+// SOURCE audio.js
+// AUDIO — one context, synthesized voices, complete audio-clock reservations.
+let ctx = null, master = null, wave = null, noiseBuf = null, run = null, raf = 0;
+const live = new Set();
+const PART = [0, 1, 0.5, 0.3, 0.16, 0.08, 0.04];
+function audioSettings() {
+  return typeof saveData !== "undefined" && saveData.settings ? saveData.settings : { volume: 1, muted: false };
+}
+function applyAudioSettings() {
+  if (!master || !ctx) return;
+  const settings = audioSettings();
+  const volume = Number.isFinite(settings.volume) ? Math.max(0, Math.min(1, settings.volume)) : 1;
+  master.gain.setValueAtTime(settings.muted ? 0 : 0.8 * volume, ctx.currentTime);
+  soundState();
+}
+function soundState() {
+  const chip = $("soundChip"), hud = $("hud"), muted = audioSettings().muted;
+  const ready = !!ctx && ctx.state === "running";
+  if (chip) { chip.hidden = ready && !muted; chip.disabled = !!muted; chip.textContent = muted ? "음소거 중" : "소리 켜기"; }
+  if (hud) hud.classList.toggle("nosound", !ready || muted);
+  if (!ready && run && !run.perf && run.advanced) stopRun(true);
+}
+function audio() {
+  try {
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      const context = new AC();
+      const gain = context.createGain();
+      gain.connect(context.destination);
+      const periodic = context.createPeriodicWave(new Float32Array(PART.length), new Float32Array(PART));
+      const buffer = context.createBuffer(1, Math.floor(context.sampleRate * 0.3), context.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      ctx = context; master = gain; wave = periodic; noiseBuf = buffer;
+      ctx.addEventListener("statechange", soundState);
+      applyAudioSettings();
+    }
+    if (ctx.state !== "running" && ctx.state !== "closed") {
+      const resumed = ctx.resume();
+      if (resumed && resumed.catch) resumed.catch(soundState);
+    }
+    soundState();
+    return ctx.state === "closed" ? null : ctx;
+  } catch (error) { return null; }
+}
+function keep(node) {
+  live.add(node);
+  node.addEventListener("ended", () => live.delete(node));
+}
+function silence() {
+  live.forEach(node => { try { node.stop(); } catch (error) { /* Node already finished. */ } });
+  live.clear();
+}
+function scheduleAudioEvents(context, events, t0, destination, periodicWave, onNode) {
+  return events.map(event => {
+    const oscillator = context.createOscillator(), gain = context.createGain();
+    const start = t0 + event.at, peak = event.peak;
+    oscillator.setPeriodicWave(periodicWave);
+    oscillator.frequency.setValueAtTime(hz(event.midi), start);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.linearRampToValueAtTime(peak, start + 0.012);
+    gain.gain.setValueAtTime(peak, start + Math.max(0.02, event.dur - 0.08));
+    gain.gain.linearRampToValueAtTime(0.0001, start + event.dur);
+    oscillator.connect(gain); gain.connect(destination);
+    oscillator.start(start); oscillator.stop(start + event.dur + 0.05);
+    if (onNode) onNode(oscillator);
+    return oscillator;
+  });
+}
+function tone(mid, when, dur, peak) {
+  if (!ctx) return;
+  scheduleAudioEvents(ctx, [{ midi: mid, at: 0, dur, peak }], when, master, wave, keep);
+}
+function burst(when, dur, freq, q, peak) {
+  if (!ctx) return;
+  const source = ctx.createBufferSource(), filter = ctx.createBiquadFilter(), gain = ctx.createGain();
+  source.buffer = noiseBuf; filter.type = "bandpass"; filter.frequency.value = freq; filter.Q.value = q;
+  gain.gain.setValueAtTime(peak, when); gain.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+  source.connect(filter); filter.connect(gain); gain.connect(master);
+  source.start(when); source.stop(when + dur + 0.02); keep(source);
+}
+function fx(kind) {
+  const context = audio();
+  if (!context || context.state !== "running" || audioSettings().muted) return;
+  const t = context.currentTime + 0.01;
+  if (kind === "good") {
+    burst(t, 0.05, 2600, 5, 0.35);
+    burst(t + 0.07, 0.07, 3600, 5, 0.3);
+  } else burst(t, 0.12, 320, 1.2, 0.5);
+}
+function sound(events, lead = 0.02) {
+  stopRun(false);
+  const context = audio();
+  if (!context || audioSettings().muted) return;
+  scheduleAudioEvents(context, events, context.currentTime + lead, master, wave, keep);
+}
+function hear(lead = 0.12) {
+  stopRun(false);
+  const view = typeof currentView === "function" ? currentView() : show(App.m, App.s);
+  if (!App.m || !view) return;
+  const plan = planListen(App.m.ch, view.v), context = audio();
+  const perf = !context || !!audioSettings().muted;
+  const t0 = (perf ? performance.now() / 1000 : context.currentTime) + lead;
+  if (!perf) scheduleAudioEvents(context, plan.ev, t0, master, wave, keep);
+  run = { t0, p: plan, end: t0 + plan.end, perf, mark: view.lamp, ctx0: context ? context.currentTime : 0,
+    p0: performance.now(), on: "", last: null, lastAt: performance.now(), advanced: false };
+  setState({ playing: true });
+  raf = requestAnimationFrame(frame);
+}
+function paint(key) {
+  document.querySelectorAll("#tokens .tok").forEach(element => element.classList.toggle("is-on", key === "all" || key === element.dataset.k));
+}
+function clock() {
+  return run && run.perf ? performance.now() / 1000 : ctx.currentTime - (ctx.outputLatency || ctx.baseLatency || 0);
+}
+function frame() {
+  const active = run;
+  if (!active) return;
+  if (!active.perf && ctx.currentTime !== active.ctx0) active.advanced = true;
+  if (!active.perf && performance.now() - active.p0 > 1200 && !active.advanced) {
+    const shift = performance.now() / 1000 + 0.1 - active.t0;
+    active.perf = true; active.t0 += shift; active.end += shift; silence();
+    soundState();
+  }
+  const now = clock();
+  if (!active.perf) {
+    if (now !== active.last) { active.last = now; active.lastAt = performance.now(); }
+    else if (active.advanced && performance.now() - active.lastAt > 800) { stopRun(true); return; }
+  }
+  const elapsed = now - active.t0, index = Math.floor(elapsed / STEP_S);
+  const key = !active.mark || elapsed < 0 || elapsed >= active.p.end - 0.1 ? ""
+    : index < active.p.n ? String(active.p.ev[index].k)
+    : elapsed >= active.p.n * STEP_S + 0.1 ? "all" : "";
+  if (key !== active.on) { active.on = key; paint(key); }
+  if (now >= active.end) { stopRun(false); return; }
+  raf = requestAnimationFrame(frame);
+}
+function stopRun(notify = false) {
+  cancelAnimationFrame(raf); raf = 0; silence();
+  const previous = run;
+  run = null;
+  if (previous) paint("");
+  if (!previous && !App.playing) return;
+  const patch = { playing: false };
+  if (notify && App.s) patch.s = Object.assign({}, App.s, { msg: say("warn", "소리가 멈췄어요. 소리 켜기를 누르고 다시 들어 보세요.", "sound") });
+  setState(patch);
+}
+// AU-04 uses the same oscillator reservation path without creating an AudioContext.
+function auditAudioReservation() {
+  const nodes = [];
+  const parameter = () => ({ setValueAtTime() {}, linearRampToValueAtTime() {} });
+  const fake = {
+    createOscillator() {
+      const node = { midiHz: null, starts: [], stops: [], setPeriodicWave() {}, connect() {},
+        frequency: { setValueAtTime(value, time) { node.midiHz = value; node.frequencyTime = time; } },
+        start(time) { this.starts.push(time); }, stop(time) { this.stops.push(time); } };
+      nodes.push(node); return node;
+    },
+    createGain() { return { gain: parameter(), connect() {} }; }
+  };
+  const ch = chord("C"), voices = byMember(voicing(ch, "E4 G4 C5")), plan = planListen(ch, voices);
+  scheduleAudioEvents(fake, plan.ev, 10, {}, {}, () => {});
+  const expectedMidi = [64, 67, 72, 64, 67, 72], expectedStart = [10, 10.5, 11, 11.6, 11.6, 11.6];
+  const near = (a, b) => Math.abs(a - b) < 1e-8;
+  const valid = nodes.length === 6 && nodes.every((node, index) => near(node.midiHz, hz(expectedMidi[index])) &&
+    near(node.starts[0], expectedStart[index]) && near(node.frequencyTime, expectedStart[index]) &&
+    near(node.stops[0], expectedStart[index] + (index < 3 ? 0.51 : 1.35)));
+  nodes.forEach(node => node.stop(10.1));
+  return valid && nodes.every(node => node.stops.length === 2 && node.stops[1] < node.stops[0]);
+}
+document.addEventListener("visibilitychange", () => { if (document.hidden && run) stopRun(true); });
+
+
+// SOURCE screens.js
+// ═══ SCREENS ═══ 지도와 발견 장면은 운행의 같은 이론 엔진을 사용한다.
+const SCENE_DATA = [
+  { id: 'S1', title: '높이로 정해요', chord: 'C', frames: ['E4 G4 C5', 'E4 G4 C5'], labels: ['섞인 줄', '높이 순서'], row: [2, 0, 1], text: '줄 선 순서가 아니라 높이로 정해요. 가장 낮은 음을 밑음(Bass)이라고 불러요.' },
+  { id: 'S2', title: '근음은 이름표', chord: 'C', frames: ['C4 E4 G4', 'E4 G4 C5'], text: 'C가 어디에 서도 이 화음의 근음은 C예요. 근음은 이름표, 밑음은 자리예요.' },
+  { id: 'S3', title: '세 음, 세 자리', chord: 'C', frames: ['C4 E4 G4', 'E4 G4 C5', 'G4 C5 E5'], text: '밑음이 근음이면 기본 위치, 3음이면 첫째 자리바꿈, 5음이면 둘째 자리바꿈이에요.' },
+  { id: 'S4', title: '한 바퀴를 돌면', chord: 'C', frames: ['C4 E4 G4', 'E4 G4 C5', 'G4 C5 E5', 'C5 E5 G5'], text: '세 번 올리면 처음 모양으로 돌아와요. 모두 한 옥타브 위에 있을 뿐, 다시 기본 위치예요.' },
+  { id: 'S5', title: '7화음의 네 자리', chord: 'CM7', frames: ['C4 E4 G4 B4', 'E4 G4 B4 C5', 'G4 B4 C5 E5', 'B4 C5 E5 G5'], text: '음이 넷이면 자리도 넷이에요. 7음이 밑음이면 셋째 자리바꿈이에요.' },
+  { id: 'S6', title: '슬래시 이름표', chord: 'C', frames: ['E4 G4 C5'], text: 'C/E는 “C 화음, 밑음은 E”예요. 슬래시 왼쪽이 화음, 오른쪽이 밑음이에요.' },
+  { id: 'S7', title: '윗음이 움직여도', chord: 'C', frames: ['E4 G4 C5', 'E4 C5 G5'], text: '윗음을 아무리 옮겨도 밑음이 그대로면 자리바꿈도 그대로예요.' },
+  { id: 'S8', title: '틈 위의 근음', chord: 'F', frames: ['A4 C5 F5', 'F4 A4 C5'], text: '3도씩 고르게 쌓이면 맨 아래가 근음이에요. 틈이 있으면 틈 바로 위가 근음이에요.' }
+];
+const CARD_DATA = [
+  { id: 'bass', type: '낱말', title: '밑음(Bass)', text: '지금 가장 낮게 울리는 음이에요. 베이스라고도 해요. 책에 따라 “밑음”을 근음의 뜻으로 쓰기도 해요.', scene: 'S1', chord: 'C', notes: 'E4 G4 C5' },
+  { id: 'root', type: '낱말', title: '근음(Root)', text: '화음의 이름을 정하는 음이에요. 3도로 쌓으면 맨 아래에 와요.', scene: 'S2', chord: 'C', notes: 'C4 E4 G4' },
+  { id: 'slash', type: '낱말', title: '슬래시 이름표', text: '슬래시 왼쪽은 화음, 오른쪽은 밑음이에요. C/E는 C 화음의 밑음이 E라는 뜻이에요.', scene: 'S6', chord: 'C', notes: 'E4 G4 C5' },
+  { id: 'inv0', type: '자리', title: '기본 위치', text: '근음이 밑음이에요. 기본위치라고도 해요.', chord: 'C', notes: 'C4 E4 G4' },
+  { id: 'inv1', type: '자리', title: '첫째 자리바꿈', text: '3음이 밑음이에요. 제1전위라고도 해요.', chord: 'C', notes: 'E4 G4 C5' },
+  { id: 'inv2', type: '자리', title: '둘째 자리바꿈', text: '5음이 밑음이에요. 제2전위라고도 해요.', chord: 'C', notes: 'G4 C5 E5' },
+  { id: 'inv3', type: '자리', title: '셋째 자리바꿈', text: '7음이 밑음이에요. 제3전위라고도 해요. 7화음에만 있어요.', chord: 'CM7', notes: 'B4 C5 E5 G5' },
+  { id: 'height', type: '규칙', title: '높이로 정해요', text: '줄을 선 순서보다 높이를 살펴봐요. 가장 낮은 음이 밑음이에요.', scene: 'S1', chord: 'C', notes: 'E4 G4 C5' },
+  { id: 'constant', type: '규칙', title: '근음은 그대로', text: '음을 어떻게 옮겨도 화음의 근음은 바뀌지 않아요.', scene: 'S2', chord: 'C', notes: 'E4 G4 C5' },
+  { id: 'cycle', type: '규칙', title: '한 바퀴', text: '구성음 수만큼 올리면 처음 모양이에요. 음은 모두 한 옥타브 높아졌어요.', scene: 'S4', chord: 'C', notes: 'C5 E5 G5' },
+  { id: 'upper', type: '규칙', title: '윗음은 상관없어요', text: '윗음이 움직여도 밑음이 그대로면 자리바꿈도 그대로예요.', scene: 'S7', chord: 'C', notes: 'E4 C5 G5' },
+  { id: 'gap', type: '규칙', title: '틈 위가 근음', text: '3도로 고르게 쌓이면 맨 아래, 밀집 배치에 틈이 있으면 틈 바로 위가 근음이에요.', scene: 'S8', chord: 'F', notes: 'A4 C5 F5' }
+];
+const CAUSE_LABELS = { order: '맨 앞 음을 골랐어요', root: '근음을 밑음으로 골랐어요', top: '가장 높은 음으로 정했어요', higher: '더 낮은 음을 놓쳤어요', bass: '밑음을 다시 살펴봐요', member: '구성음과 근음을 헷갈렸어요', stack: '3도 쌓기를 다시 살펴봐요', still: '아직 음을 옮기지 않았어요', floor: '밑음의 층이 바뀌었어요', sym: '심벌과 밑음을 견주어 봐요', inv: '자리의 이름을 견주어 봐요', ord: '자리를 한 칸 밀려 셌어요', shape: '윗음 이동을 자리바꿈으로 봤어요', swap: '슬래시 좌우를 바꿨어요', newroot: '밑음을 새 근음으로 적었어요', noslash: '슬래시가 빠졌어요', slash: '기본 위치에 슬래시를 붙였어요', both: '두 곳을 함께 살펴봐요', one: '틀린 한 곳을 찾아봐요', chordok: '화음 이름은 맞아요', bassok: '밑음은 맞아요' };
+function screenEscape(value) { return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
+function screenWords(value) {
+  const usageNote = '책에 따라 “밑음”을 근음의 뜻으로 쓰기도 해요.';
+  const text = String(value).replace(usageNote, '__BASS_USAGE_NOTE__');
+  return translateWords(text).replace('__BASS_USAGE_NOTE__', usageNote);
+}
+function screenButton(label, action, attrs = '', style = '') { return `<button type="button" data-action="${action}" ${attrs} class="screen-button ${style}">${musicHTML(screenWords(label))}</button>`; }
+function screenHeader(title, back = 'map', sub = '') { return `<div class="screen-heading">${screenButton('뒤로', 'nav', `data-screen="${back}"`, 'back-button')}<div><h1>${musicHTML(screenWords(title))}</h1>${sub ? `<p>${screenEscape(sub)}</p>` : ''}</div></div>`; }
+function stationArt() {
+  return `<svg class="station-art" viewBox="0 0 600 350" role="img" aria-label="근음 C를 태우고 위층으로 올라가는 에스컬레이터"><defs><linearGradient id="stationLight" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#dcedf4"/></linearGradient><pattern id="stationGrid" width="38" height="38" patternUnits="userSpaceOnUse"><path d="M38 0H0V38" fill="none" stroke="#c7d2da" stroke-width=".8"/></pattern></defs><path d="M45 60 300 10l255 50v240H45Z" fill="url(#stationLight)" stroke="#c7d2da" stroke-width="2"/><path d="M45 60h510v240H45z" fill="url(#stationGrid)"/><path d="M45 155h510M45 250h510" stroke="#a5b9c6" stroke-width="5"/><path d="m115 253 250-158h95v26h-83L129 280H70v-27Z" fill="#17627e"/><path d="m117 244 249-158h94" fill="none" stroke="#17627e" stroke-width="6" stroke-linecap="round"/><path d="m130 258 240-151" fill="none" stroke="#bfe3f2" stroke-width="13" stroke-dasharray="4 10"/><rect x="310" y="50" width="73" height="51" rx="11" fill="#ffd35c" stroke="#8a5a00" stroke-width="2.5"/><text x="347" y="72" text-anchor="middle" fill="#1a2630" font-family="system-ui" font-size="23" font-weight="800">C</text><text x="347" y="91" text-anchor="middle" fill="#1a2630" font-family="system-ui" font-size="12" font-weight="700">근음</text><circle cx="178" cy="225" r="26" fill="#bfe3f2" stroke="#17627e" stroke-width="2.5"/><text x="178" y="233" text-anchor="middle" fill="#1a2630" font-family="system-ui" font-size="23" font-weight="800">E</text><circle cx="248" cy="182" r="26" fill="#cdeccf" stroke="#256f43" stroke-width="2.5"/><text x="248" y="190" text-anchor="middle" fill="#1a2630" font-family="system-ui" font-size="23" font-weight="800">G</text><rect x="121" y="287" width="84" height="27" rx="13" fill="#1a2630"/><text x="163" y="306" text-anchor="middle" fill="white" font-family="system-ui" font-size="13" font-weight="700">${screenEscape(screenWords('밑음 자리'))}</text><path d="M76 322h448" stroke="#9bafbd" stroke-width="2"/><path d="M480 80h36v45h-36zM480 175h36v45h-36z" fill="#fff" stroke="#b7cbd6" stroke-width="2"/></svg>`;
+}
+function miniStage(chordId, notes, columnOrder = null) {
+  const ch = chord(chordId), v = byMember(voicing(ch, notes)), low = bassIx(ch, v), sorted = order(ch, v), columns = columnOrder || sorted;
+  const W = 440, H = 210, y = p => 25 + (42 - p) * 9.5;
+  let h = `<svg class="mini-stage" viewBox="0 0 ${W} ${H}" role="img" aria-label="${screenEscape(vText(ch, v))}. ${screenEscape(screenWords(symbolOf(ch, v)))}">`;
+  for (let p = 30; p <= 38; p += 2) h += `<path d="M16 ${y(p)}H424" stroke="#b5c1ca" stroke-width="1"/>`;
+  v.forEach((voice, k) => {
+    const x = 64 + columns.indexOf(k) * (310 / Math.max(1, ch.n - 1)), cy = y(posAt(ch, voice));
+    const colors = ['#ffd35c', '#bfe3f2', '#cdeccf', '#e3d3f4'];
+    h += k === 0 ? `<rect x="${x-25}" y="${cy-21}" width="50" height="42" rx="8" fill="${colors[k]}" stroke="#8a5a00" stroke-width="2"/>` : `<ellipse cx="${x}" cy="${cy}" rx="25" ry="21" fill="${colors[k]}" stroke="#4b5b68" stroke-width="2"/>`;
+    const pitch = ch.tones[k], letterX = pitch.a ? x - 5 : x;
+    h += `<text x="${letterX}" y="${cy+1}" text-anchor="middle" font-size="17" font-weight="800" fill="#1a2630">${LETTERS[pitch.l]}</text>${drawAccidental(pitch.a, x + 2, cy - 5, 6)}<text x="${x}" y="${cy+15}" text-anchor="middle" font-size="12" font-weight="600" fill="#1a2630">${degKo(k)}</text>`;
+  });
+  const bassPitch = ch.tones[v[low].k];
+  h += `<rect x="24" y="183" width="80" height="21" rx="10" fill="#1a2630"/><text x="60" y="198" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">${screenEscape(screenWords('밑음'))} ${LETTERS[bassPitch.l]}</text><g style="color:white">${drawAccidental(bassPitch.a, 83, 193, 4.5)}</g></svg>`;
+  return h;
+}
+function renderTitleScreen() {
+  const active = saveData.active;
+  return `<div class="title-screen"><div class="title-brand"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><p>음을 옮기며 배우는 음악이론</p></div><h1>화음<br>에스컬레이터</h1><p class="title-lead">근음은 이름표,<br>${screenEscape(screenWords('밑음은 자리예요.'))}</p>${stationArt()}<div class="title-actions">${screenButton('운행 시작', 'nav', 'data-screen="map"', 'primary')}${active ? screenButton('이어서 운행', 'resume', '', 'secondary') : ''}<div class="title-links">${screenButton('도감', 'nav', 'data-screen="book"')}${screenButton('자유 실험실', 'lab')}${screenButton('설정', 'nav', 'data-screen="settings"')}</div></div></div>`;
+}
+function renderMapScreen() {
+  return screenHeader('운행일 지도', 'title', '한 번에 풀면 ●, 도움을 받으면 ◐') + `<div class="map-list">${DAYS.map((day, i) => {
+    const record = saveData.days[day.id] || { passed: false, stamp: 0, best: 0 }, unlocked = i === 0 || saveData.days[DAYS[i-1].id]?.passed;
+    return `<button type="button" class="day-stop ${record.passed ? 'passed' : ''}" data-action="day" data-day="${day.id}" ${unlocked ? '' : 'disabled'}><span class="day-number">${i}단</span><span class="day-copy"><strong>${musicHTML(screenWords(day.name))}</strong><span>${unlocked ? `${day.jobs.length}개 운행 · ${record.runs ? `최고 ● ${record.best}/${day.jobs.length}` : '처음 만나는 운행'}` : `${i-1}단을 통과하면 열려요`}</span></span><span class="day-stamp">${record.stamp === 2 ? '한 번에<br>도장' : record.stamp === 1 ? '도장' : unlocked ? '운행' : '잠김'}</span></button>`;
+  }).join('')}</div><div class="screen-footer">${screenButton('기록 보기', 'nav', 'data-screen="log"')}${saveData.active ? screenButton('이어서 운행', 'resume') : ''}</div>`;
+}
+function renderCloseScreen() {
+  const count = App.results.length, full = App.results.filter(x => x.r === 'full').length, passed = full >= Math.ceil(count * .8);
+  const completionText = App.debug ? '개발용 운행을 확인했어요.' : passed ? (App.day.id === 'd7' ? '여덟 운행일을 모두 마쳤어요.' : '다음 운행일이 열렸어요.') : `● ${Math.ceil(count * .8)}개면 통과해요.`;
+  return screenHeader(`${App.day.name} 마감`, 'map') + `<div class="closing-summary"><span class="stamp-art ${passed ? '' : 'pending'}">${full === count ? '한 번에<br>도장' : passed ? '운행<br>도장' : '다시<br>운행'}</span><div><p>한 번에 풀어낸 운행</p><strong>${full}<small> / ${count}</small></strong><p>${completionText}</p></div></div><ol class="result-list">${App.results.map(r => `<li><span class="result-dot ${r.r}">${r.r === 'full' ? '●' : '◐'}</span><span>${musicHTML(screenWords(r.tag || r.id))}</span></li>`).join('')}</ol>${App.newCards?.length ? `<section class="new-cards"><h2>오늘 얻은 카드</h2><p>${App.newCards.map(id => CARD_DATA.find(c => c.id === id)?.title || id).map(t => musicHTML(screenWords(t))).join(' · ')}</p></section>` : ''}<div class="screen-footer">${screenButton('다시 운행', 'day', `data-day="${App.day.id}"`, 'primary')}${screenButton('지도로', 'nav', 'data-screen="map"')}</div><p class="test-caption">자가검사 ${window.__tests?.pass || 0}/${window.__tests?.total || 46}</p>`;
+}
+function renderSceneScreen() {
+  const scene = SCENE_DATA.find(x => x.id === (App.sceneId || App.scene)) || SCENE_DATA[0], frame = (App.sceneFrame || 0) % scene.frames.length;
+  return screenHeader(scene.title, App.sceneReturn || 'book', '발견 장면') + `<div class="discovery-visual">${miniStage(scene.chord, scene.frames[frame], scene.id === 'S1' && frame === 0 ? scene.row : null)}<div class="diagram-symbol">${musicHTML(symbolOf(chord(scene.chord), byMember(voicing(chord(scene.chord), scene.frames[frame]))))}</div></div><p class="discovery-text">${musicHTML(screenWords(scene.text))}</p><div class="scene-pages" role="group" aria-label="배치 비교">${scene.frames.map((_, i) => screenButton(scene.labels?.[i] || `${i+1}번째 배치`, 'scene-frame', `data-frame="${i}" aria-pressed="${i===frame}"`, i===frame?'selected':'')).join('')}</div><div class="screen-footer">${screenButton('들어 보기', 'scene-hear')}${screenButton('알겠어요', 'scene-next', '', 'primary')}</div>`;
+}
+function renderBookScreen() {
+  const unlocked = new Set(saveData.cards), selected = CARD_DATA.find(c => c.id === App.bookCard && unlocked.has(c.id));
+  return screenHeader('자리 도감', 'title', `모은 카드 ${unlocked.size} / 12`) + (selected ? `<article class="card-detail"><span class="eyebrow">${selected.type} 카드</span><h2>${musicHTML(screenWords(selected.title))}</h2>${miniStage(selected.chord, selected.notes)}<p>${musicHTML(screenWords(selected.text))}</p>${screenButton('들어 보기', 'card-hear', `data-card="${selected.id}"`)}</article>` : '') + `<div class="book-grid">${CARD_DATA.map(c => `<button type="button" class="book-card ${unlocked.has(c.id) ? '' : 'locked'}" data-action="card" data-card="${c.id}" ${unlocked.has(c.id)?'':'disabled'}><span>${c.type}</span><strong>${musicHTML(screenWords(c.title))}</strong><small>${unlocked.has(c.id)?'카드 펼치기':'운행하며 모아요'}</small></button>`).join('')}</div><h2 class="sub-heading">발견 장면 다시 보기</h2><div class="scene-list">${SCENE_DATA.map(s => screenButton(s.title,'scene',`data-scene="${s.id}" ${saveData.scenes.includes(s.id)?'':'disabled'}`)).join('')}</div>`;
+}
+function renderLogScreen() {
+  const causes = Object.entries(saveData.causes).sort((a,b) => b[1]-a[1]).slice(0,3);
+  return screenHeader('운행 기록', 'map') + `<div class="stat-grid"><div><strong>${saveData.stats.jobs}</strong><span>완료한 운행</span></div><div><strong>${saveData.stats.full}</strong><span>한 번에 ●</span></div><div><strong>${saveData.stats.pads}</strong><span>두 손 패드</span></div></div><h2 class="sub-heading">다시 살펴볼 것</h2>${causes.length ? `<ul class="cause-list">${causes.map(([id,n])=>`<li>${screenEscape(screenWords(CAUSE_LABELS[id]||id))}<b>${n}번</b></li>`).join('')}</ul>` : '<p class="empty-note">운행 중 살펴본 까닭이 여기에 쌓여요.</p>'}<h2 class="sub-heading">운행일별 최고 기록</h2><div class="history-list">${DAYS.map(d=>`<div><span>${musicHTML(screenWords(d.name))}</span><strong>${saveData.days[d.id]?.best||0} / ${d.jobs.length}</strong></div>`).join('')}</div>`;
+}
+function renderSettingsScreen() {
+  const s=saveData.settings;
+  return screenHeader('설정','title')+`<div class="settings-list"><label><span>소리 크기</span><input data-setting="volume" type="range" min="0" max="1" step="0.05" value="${s.volume}" aria-label="소리 크기"></label><label><span>음소거</span><input data-setting="muted" type="checkbox" ${s.muted?'checked':''}></label><label><span>가장 낮은 음의 말</span><select data-setting="bassWord"><option value="밑음" ${s.bassWord==='밑음'?'selected':''}>밑음(Bass)</option><option value="베이스" ${s.bassWord==='베이스'?'selected':''}>베이스(Bass)</option></select></label><label><span>자리의 말</span><select data-setting="invWord"><option value="자리바꿈" ${s.invWord==='자리바꿈'?'selected':''}>자리바꿈</option><option value="전위" ${s.invWord==='전위'?'selected':''}>전위</option></select></label><label><span>움직임</span><select data-setting="motion"><option value="system" ${s.motion==='system'?'selected':''}>기기 설정 따르기</option><option value="reduced" ${s.motion==='reduced'?'selected':''}>동작 줄이기</option><option value="full" ${s.motion==='full'?'selected':''}>모두 보기</option></select></label></div><div class="settings-actions">${screenButton('튜토리얼 다시 보기','tutorial')}${screenButton(`자가검사 ${window.__tests?.pass||0}/${window.__tests?.total||46}`,'nav','data-screen="test"')}</div>${typeof Store!=='undefined' && Store.available===false ? '<p class="storage-note" role="status">이 기기에서는 기록이 저장되지 않아요</p>':''}<section class="reset-area"><h2>운행 기록 초기화</h2><p>모은 카드와 도장, 설정을 처음으로 돌려요.</p>${screenButton(App.confirmReset?'정말 초기화하기':'데이터 초기화','reset','', 'danger')}${App.confirmReset?screenButton('취소','reset-cancel'):''}</section>`;
+}
+function renderTestScreen() {
+  const t=window.__tests||{pass:0,total:46,fails:[]};
+  return screenHeader('자가검사','settings')+`<div class="test-summary"><strong>${t.pass} / ${t.total}</strong><p>${t.fails.length?'확인이 필요한 항목이 있어요.':'현재 검사가 모두 통과했어요.'}</p></div><div class="screen-footer"><button id="uiAuditButton" type="button" class="screen-button" onclick="startUiAudit(this)">화면 조작 검사</button></div><pre id="uiAuditResults" style="white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.6 system-ui" role="status"></pre><ul class="test-results">${(t.items||t.results||t.fails.map(name=>({name,pass:false}))).map(x=>`<li>${x.pass===false?'확인 필요':'통과'} · ${screenEscape(x.name||x.id||x)}</li>`).join('')}</ul>`;
+}
+function renderScreens() {
+  const renderers={title:renderTitleScreen,map:renderMapScreen,close:renderCloseScreen,scene:renderSceneScreen,book:renderBookScreen,log:renderLogScreen,settings:renderSettingsScreen,test:renderTestScreen};
+  const panel=document.getElementById('screenPanel');
+  if (!panel) return;
+  const key=App.screen;
+  if (key==='run'||key==='lab') {panel.hidden=true;return;}
+  panel.hidden=false;
+  panel.innerHTML=(renderers[key]||renderTitleScreen)();
+  panel.className=`screen-panel screen-${key}`;
+}
+function setupScreenInputs() {
+  const panel=document.getElementById('screenPanel');
+  panel.addEventListener('click',event=>{
+    const button=event.target.closest('button[data-action]');if(!button||button.disabled)return;
+    const d=button.dataset;
+    if(d.action==='nav') { if(App.screen==='scene' && App.sceneReturn==='run') sceneContinue(); else goScreen(d.screen); }
+    else if(d.action==='day') startDay(d.day);
+    else if(d.action==='resume') resumeDay();
+    else if(d.action==='lab') enterLab();
+    else if(d.action==='scene') showScene(d.scene,'book');
+    else if(d.action==='scene-frame') setState({sceneFrame:+d.frame});
+    else if(d.action==='scene-next') sceneContinue();
+    else if(d.action==='scene-hear') {
+      const scene=SCENE_DATA.find(x=>x.id===(App.sceneId||App.scene))||SCENE_DATA[0],ch=chord(scene.chord),v=byMember(voicing(ch,scene.frames[(App.sceneFrame||0)%scene.frames.length]));sound(planListen(ch,v).ev,.12);
+    }
+    else if(d.action==='card') setState({bookCard:d.card});
+    else if(d.action==='card-hear') {const card=CARD_DATA.find(x=>x.id===d.card),ch=chord(card.chord);sound(planListen(ch,byMember(voicing(ch,card.notes))).ev,.12);}
+    else if(d.action==='reset') {if(App.confirmReset)resetProgress();else setState({confirmReset:true});}
+    else if(d.action==='reset-cancel')setState({confirmReset:false});
+    else if(d.action==='tutorial'){setSetting('soundChecked',false);startDay('d0');}
+  });
+  panel.addEventListener('change',event=>{
+    const field=event.target,key=field.dataset.setting;if(!key)return;
+    setSetting(key,field.type==='checkbox'?field.checked:field.type==='range'?+field.value:field.value);
+  });
+}
+
+
+// SOURCE input.js
+// ═══ 7 INPUT ═══ 입력은 순수 흐름 함수를 호출하고 한 번만 확정한다.
+let labMasks = { roles: false, lamp: false, plate: false };
+function currentView() {
+  const view = show(App.m, App.s);
+  if (App.screen !== "lab") return view;
+  return Object.assign({}, view, {
+    roles: !labMasks.roles, lamp: !labMasks.lamp,
+    plate: labMasks.plate ? "?" : symbolOf(App.m.ch, App.s.v), sub: labMasks.plate ? "" : App.m.ch.ko,
+    canRide: true, canTap: true, esc: true, rider: App.s.sel
+  });
+}
+function onTap(k) {
+  if (!["run", "lab"].includes(App.screen)) return;
+  const { m, s } = App;
+  const patch = F.tap(m, s, k);
+  if (!patch) return;
+  setFlow(patch);
+  sound([{ at: 0, dur: .34, midi: midiAt(m.ch, App.s.v[k]), peak: .30 }]);
+}
+function onRide(direction) {
+  if (!["run", "lab"].includes(App.screen)) return;
+  const patch = F.ride(App.m, App.s, direction);
+  if (!patch) return;
+  setFlow(patch);
+  if (patch.last) sound(planRide(App.m.ch, patch.last));
+}
+function onChip(id) {
+  if (App.screen !== "run") return;
+  const { m, s } = App;
+  if (m.steps[s.step].kind === "pick") onTap(id);
+  else setFlow(F.pick(m, s, id));
+}
+function onOk() {
+  if (App.screen !== "run") return;
+  const { m, s } = App, patch = F.confirm(m, s);
+  if (patch.done) return nextJob();
+  setFlow(patch);
+  if (App.s.step !== s.step) {
+    if (m.steps[App.s.step].kind === "listen") hear(.24);
+    fx("good");
+  } else if (patch.msg && patch.msg.tone === "bad") fx("bad");
+}
+function setSetting(key, value) {
+  if (!Object.hasOwn(saveData.settings, key)) return;
+  saveData.settings[key] = value;
+  Store.save(saveData);
+  applyAudioSettings();
+  if (App.m && App.screen === "run") {
+    const seed = App.day.jobs[App.idx];
+    const model = build(seed, App.day);
+    setState({ m: model, s: Object.assign({}, App.s, { msg: say("", prompt(model, App.s.step, App.s.v)) }) });
+  } else render();
+}
+function resetProgress() {
+  stopRun(false);
+  saveData = Store.reset();
+  setState({ screen: "title", session: null, results: [], closeData: null, sceneId: null, confirmReset: false, soundCheck: false });
+}
+function makeLabChord(id) {
+  stopRun(false);
+  const ch = chord(id);
+  if (!ch || ch.tones.some(t => Math.abs(t.a) > 2)) return false;
+  const v = closeV(ch, 0);
+  if (!v) return false;
+  const seed = { id: "lab-" + id, ask: "make", chord: id, from: vAscii(ch, v), to: "keep", free: true, help: true };
+  const m = build(seed, { free: true });
+  m.text = "음을 고르고 올리기나 내리기로 옮겨 보세요.";
+  setState({ m, s: F.start(m), screen: "lab", playing: false });
+  return true;
+}
+function enterLab() {
+  stopRun(false);
+  labMasks = { roles: false, lamp: false, plate: false };
+  makeLabChord("C");
+}
+function renderLabControls() {
+  $("askTag").textContent = "자유 실험실";
+  $("askText").textContent = "자유롭게 옮겨 보세요.";
+  $("dayName").textContent = "자유 실험실";
+  $("dots").hidden = true;
+  $("readout").innerHTML = musicHTML(translateWords(summary(App.m, App.s.v)));
+  $("padBass").hidden = $("padUpper").hidden = false;
+  $("chips").hidden = true;
+  $("btnOk").hidden = true;
+  $("btnHear").style.flex = "1";
+  $("btnReset").hidden = false;
+  const selected = App.m.ch.id;
+  const letters = [...LETTERS].map(l => '<option value="' + l + '"' + (pc(selected.replace(/(?:M7|m7|7|m)$/, "")).l === LETTERS.indexOf(l) ? " selected" : "") + '>' + l + "</option>").join("");
+  const rootNote = App.m.ch.root;
+  const qualities = [["", "장3화음"], ["m", "단3화음"], ["M7", "장7화음"], ["7", "딸림7화음"], ["m7", "단7화음"]];
+  const q = selected.slice(pcAscii(rootNote).length);
+  const key = selected + JSON.stringify(labMasks);
+  if ($("labPanel").dataset.key === key) return;
+  $("labPanel").dataset.key = key;
+  $("labPanel").innerHTML = '<button id="closeLabOptions" type="button">설정 닫기</button><label>근음 <select id="labRoot" aria-label="실험실 근음">' + letters + '</select></label>' +
+    '<label>기호 <select id="labAcc" aria-label="실험실 기호">' + [[-1, "플랫"], [0, "제자리"], [1, "샵"]].map(([a, text]) => '<option value="' + a + '"' + (a === rootNote.a ? " selected" : "") + ">" + text + "</option>").join("") + '</select></label>' +
+    '<label>화음 <select id="labQuality" aria-label="실험실 화음 성질">' + qualities.map(([k, text]) => '<option value="' + k + '"' + (q === k ? " selected" : "") + ">" + text + "</option>").join("") + "</select></label>" +
+    '<div class="labMasks">' + [["roles", "구성음 이름"], ["lamp", WORDS.bass + " 자리"], ["plate", "이름표"]].map(([key, name]) => '<button type="button" data-mask="' + key + '" aria-pressed="' + labMasks[key] + '">' + name + (labMasks[key] ? " 보이기" : " 가리기") + "</button>").join("") + "</div>";
+}
+function updateLabChord() {
+  const root = $("labRoot").value, a = +$("labAcc").value, quality = $("labQuality").value;
+  const id = root + (a < 0 ? "b" : a > 0 ? "#" : "") + quality;
+  if (!makeLabChord(id)) $("readout").textContent = "이 화음은 무대에 놓기 어려워요. 다른 근음을 골라 주세요.";
+}
+function renderTutorial() {
+  const box = $("tutorial");
+  box.hidden = true;
+  if (App.screen !== "run") return;
+  const cues = {
+    "d0-01": App.s.sel === null ? "음 하나를 눌러 골라 보세요." : "이제 확정을 눌러요.",
+    "d0-05": "올리기를 누르면 가장 낮은 음이 타요.",
+    "d2-04": "내리기는 가장 높은 음을 내려요.",
+    "d6-03": "먼저 옮길 음을 누른 뒤 올려 보세요."
+  };
+  if (cues[App.m.id] && App.s.step === 0 && (!App.s.moved || App.m.id === "d0-01")) {
+    box.textContent = cues[App.m.id]; box.hidden = false;
+  }
+}
+function render() {
+  const play = ["run", "lab"].includes(App.screen);
+  const reduced = saveData.settings.motion === "reduced" || (saveData.settings.motion === "system" && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  document.documentElement.dataset.motion = reduced ? "reduced" : "full";
+  $("app").classList.toggle("narrow", window.innerHeight < 620);
+  $("app").classList.toggle("inLab", App.screen === "lab");
+  const checkingSound = App.screen === "run" && App.soundCheck;
+  $("soundCheck").hidden = !checkingSound;
+  for (const child of $("app").children) if (child.id !== "soundCheck") child.inert = !!checkingSound;
+  $("screenPanel").hidden = play;
+  $("labPanel").hidden = App.screen !== "lab" || !App.labOptions;
+  $("labOptionsBtn").hidden = App.screen !== "lab";
+  $("plate").hidden = false;
+  for (const id of ["card", "stage", "readout", "controls"]) $(id).hidden = !play;
+  $("hud").hidden = !play;
+  $("rotateNotice").hidden = !play || window.innerHeight >= 545;
+  if (play && App.m) {
+    $("dots").hidden = false;
+    $("btnOk").hidden = false;
+    $("btnHear").style.flex = "";
+    renderRun();
+    if (App.screen === "lab") renderLabControls();
+    soundState();
+  } else renderScreens();
+  renderTutorial();
+  if (checkingSound && !$("soundCheck").contains(document.activeElement)) $("soundCheck").querySelector("button").focus();
+}
+function setupInput() {
+  $("soundCheck").addEventListener("click", event => {
+    const button = event.target.closest("[data-sound-check]");
+    if (!button) return;
+    saveData.settings.soundChecked = true;
+    Store.save(saveData);
+    setState({ soundCheck: false });
+    if (button.dataset.soundCheck === "no") setFlow({ msg: say("warn", "소리 켜기를 누르거나 소리 없이 계속해도 돼요.", "sound") });
+    $("btnHear").focus();
+  });
+  $("tokens").addEventListener("click", e => {
+    const node = e.target.closest(".tok");
+    if (node && !node.disabled) onTap(+node.dataset.k);
+  });
+  $("chips").addEventListener("click", e => {
+    const node = e.target.closest(".chip");
+    if (node && !node.disabled) onChip(+node.dataset.id);
+  });
+  $("btnUp").addEventListener("click", () => onRide(1));
+  $("btnDown").addEventListener("click", () => onRide(-1));
+  $("btnReset").addEventListener("click", () => setFlow(F.reset(App.m, App.s)));
+  $("btnA").addEventListener("click", () => setFlow(F.flip(App.m, App.s, 0)));
+  $("btnB").addEventListener("click", () => setFlow(F.flip(App.m, App.s, 1)));
+  $("btnHear").addEventListener("click", () => hear());
+  $("btnOk").addEventListener("click", onOk);
+  $("padBass").addEventListener("click", () => { recordPad(); sound(planPad(App.m.ch, currentView().v, false)); });
+  $("padUpper").addEventListener("click", () => { recordPad(); sound(planPad(App.m.ch, currentView().v, true)); });
+  $("homeBtn").addEventListener("click", () => goScreen("map"));
+  $("soundChip").addEventListener("click", () => { audio(); soundState(); });
+  $("labOptionsBtn").addEventListener("click", () => setState({ labOptions: !App.labOptions }));
+  $("labPanel").addEventListener("change", updateLabChord);
+  $("labPanel").addEventListener("click", e => {
+    if (e.target.closest("#closeLabOptions")) { setState({ labOptions: false }); return; }
+    const node = e.target.closest("[data-mask]");
+    if (!node) return;
+    labMasks[node.dataset.mask] = !labMasks[node.dataset.mask];
+    render();
+  });
+  window.addEventListener("keydown", e => {
+    if (e.target.closest?.("input,select,textarea,[contenteditable=true]")) return;
+    if (!["run", "lab"].includes(App.screen) || !["ArrowUp", "ArrowDown"].includes(e.key) || !currentView().canRide) return;
+    e.preventDefault(); onRide(e.key === "ArrowUp" ? 1 : -1);
+  });
+  ["click", "touchstart", "keydown"].forEach(type => window.addEventListener(type, () => { audio(); soundState(); }, { capture: true, passive: true }));
+  let resizeTimer;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { G = null; render(); }, 60);
+  });
+  window.matchMedia("(prefers-reduced-motion: reduce)").addEventListener("change", render);
+}
+
+
+// SOURCE tests.js
+// ═══ 10 TESTS ═══ 제품에 내장된 46개 검사. 실제 학습 저장은 변경하지 않는다.
+function selfTest(options = {}) {
+  return withWords({ bassWord: "밑음", invWord: "자리바꿈" }, () => runProductTests(options));
+}
+function productRuntimeSource() {
+  const source = typeof PRODUCT_SOURCE === "string" ? PRODUCT_SOURCE : Array.from(document.scripts).map(s => s.textContent).join("\n");
+  return source.split("// ═══ 10 TESTS")[0];
+}
+function auditProductStorage(mode) {
+  const records = new Map();
+  const adapter = { getItem: key => records.has(key) ? records.get(key) : null, setItem: (key,value) => records.set(key,value) };
+  const store = createSaveStore(adapter), sample = store.defaults();
+  sample.settings.volume = 0.43;
+  sample.days.d0 = { passed: true, stamp: 1, runs: 2, best: 6 };
+  sample.cards = ["root", "inv1"]; sample.scenes = ["S2"]; sample.causes = { top: 5, bass: 2 };
+  sample.stats = { jobs: 7, full: 6, pads: 4 };
+  sample.active = { day: "d1", idx: 4, results: ["full","half","full","full"], phase: "review", review: [1,3], reviewPos: 1, newCards: ["inv1"] };
+  if (mode === "corrupt") {
+    return ["{broken", JSON.stringify({version:2}), JSON.stringify({version:1,cards:5})].every(text => {
+      records.set(SAVE_KEY,text); const fresh=createSaveStore(adapter), value=fresh.load();
+      return value.version===1 && value.active===null && records.get(SAVE_KEY+"_backup")===text;
+    });
+  }
+  if (mode === "fallback") {
+    const unavailable=createSaveStore({getItem(){throw new Error("blocked");},setItem(){throw new Error("blocked");}});
+    unavailable.load(); unavailable.save(sample);
+    const writeBlocked=createSaveStore({getItem(){return null;},setItem(){throw new Error("blocked");}});
+    writeBlocked.save(sample);
+    return !unavailable.available && unavailable.load().settings.volume===0.43 && !writeBlocked.available && writeBlocked.load().stats.jobs===7;
+  }
+  store.save(sample); const result=createSaveStore(adapter).load();
+  if (mode === "active") return JSON.stringify(result.active)===JSON.stringify(sample.active) && result.active.phase==="review" && result.active.reviewPos===1;
+  if (mode === "records") return JSON.stringify(result.cards)===JSON.stringify(sample.cards) && JSON.stringify(result.causes)===JSON.stringify(sample.causes);
+  records.set(SAVE_KEY,JSON.stringify({version:1,days:sample.days}));
+  const old=createSaveStore(adapter).load();
+  return result.version===1 && result.settings.volume===0.43 && result.days.d0.best===6 && old.settings.bassWord==="밑음" && old.stats.pads===0 && old.days.d0.passed;
+}
+
+function collectProductTexts() {
+  const texts = new Set(), wrong = [], keep = t => { if (t) texts.add(t); };
+  const ap=(s,p)=>Object.assign({},s,p||{});
+  for (const d of DAYS.concat([SPIKE])) for(const j of d.jobs) {
+    const m=build(j,d); let s=F.start(m); keep(m.text); keep(s.msg.text);
+    for(let guard=0; guard<8 && m.steps[s.step].kind!=="listen";guard++) {
+      const st=m.steps[s.step];
+      const chk=t=>{const [code,text]=why(m,t);wrong.push({id:j.id,code,text});keep(text);keep(mend(m,t));};
+      if(st.kind==="pick") {
+        const answer=st.want==="root"?0:inversion(m.ch,s.v);
+        m.ch.tones.forEach((_,k)=>{if(k!==answer)chk(ap(s,{sel:k}));});
+        s=ap(s,{sel:answer});
+      } else if(st.kind==="ride") {
+        for(const x of reach(m.ch,s.v,m.free)) {const t=ap(s,{v:x.v,moved:x.d});if(!right(m,t))chk(t);keep(prompt(m,s.step,x.v));}
+        s=ap(s,{v:fixV(m,s)});
+      } else {st.choices.forEach((_,i)=>{if(i!==st.answer)chk(ap(s,{choice:i}));});s=ap(s,{choice:st.answer});}
+      s=ap(s,F.confirm(m,s));keep(s.msg.text);
+    }
+  }
+  ["먼저 음을 골라 주세요.", "먼저 보기를 골라 주세요.", "더 올라갈 층이 없어요. 내리기를 써 보세요.", "더 내려갈 층이 없어요. 올리기를 써 보세요.", "소리가 멈췄어요. 소리 켜기를 누르고 다시 들어 보세요."].forEach(keep);
+  return {texts:[...texts],wrong};
+}
+
+// 자가검사에 더할 단언 열하나. 스파이크의 자가검사 30개가 놓친 변이를 잡는다. 제품의 검사(12.1절)에 넣는다.
+function plusTest() {
+  const fails = []; let pass = 0, total = 0;
+  const T = (name, fn) => { total++; let ok = false; try { ok = fn() === true; } catch (e) { ok = false; } if (ok) pass++; else fails.push(name); };
+  const ap = (s, p) => Object.assign({}, s, p || {});
+  const job = (id) => { for (const d of DAYS.concat([SPIKE])) for (const j of d.jobs) if (j.id === id) return build(j, d); return null; };
+  const fin = (id) => {                                                           // 바른 길로 끝냈을 때의 마무리 문구
+    const m = job(id); let s = F.start(m), g = 0;
+    while (m.steps[s.step].kind !== "listen" && g++ < 8) {
+      const st = m.steps[s.step];
+      if (st.kind === "pick") s = ap(s, { sel: st.want === "root" ? 0 : inversion(m.ch, s.v) });
+      else if (st.kind === "ride") { if (!right(m, s)) s = ap(s, { v: fixV(m, s), moved: 1 }); }
+      else s = ap(s, { choice: st.answer });
+      s = ap(s, F.confirm(m, s));
+    }
+    return s.msg.text;
+  };
+  const C = chord("C");
+  T("TH-13+ 폭이 꼭 한 옥타브면 밀집이 아니다", () => !isClose(C, voicing(C, "E4 C5 E5")) && isClose(C, voicing(C, "E4 G4 C5")) && !isClose(C, voicing(C, "E4 C5 G5")));
+  T("TH-03+ 구성음의 이름은 근음, 3음, 5음, 7음", () => [0, 1, 2, 3].map(degKo).join(" ") === "근음 3음 5음 7음");
+  T("TH-04+ 화면의 이름: B♭m7 = B♭ D♭ F A♭, D = D F♯ A", () => chord("Bbm7").tones.map(pcName).join(" ") === "B♭ D♭ F A♭" && chord("D").tones.map(pcName).join(" ") === "D F♯ A");
+  T("FL-02+ 마무리 문구가 잠금 정답표(부록 B.6)와 같다", () => fin("d0-07") === "가장 낮은 음은 G예요. 낮은 음부터 들어 보세요." && fin("d1-03") === "C/G. 근음 C, 밑음 G. 둘째 자리바꿈이에요." && fin("d2-08") === "F/C. 근음 F, 밑음 C. 둘째 자리바꿈이에요."
+    && fin("d3-02") === "Am/C. 근음 A, 밑음 C. 첫째 자리바꿈이에요." && fin("d4-04") === "CM7/B. 근음 C, 밑음 B. 셋째 자리바꿈이에요." && fin("d5-08") === "FM7/E. 근음 F, 밑음 E. 셋째 자리바꿈이에요."
+    && fin("d6-08") === "밑음이 E와 G로 달라요. 첫째와 둘째예요." && fin("d7-08") === "E♭/B♭. 근음 E♭, 밑음 B♭. 둘째 자리바꿈이에요.");
+  T("FL-03+ 2차 오답 뒤에 답이 놓여 있고 그대로 확정하면 넘어간다", () => { const m = job("d1-03"); let s = F.start(m); s = ap(s, { sel: 1 }); s = ap(s, F.confirm(m, s)); s = ap(s, { sel: 2 }); s = ap(s, F.confirm(m, s)); const ok = s.tries === 2 && s.fixed && s.sel === 0 && s.msg.code === "mend" && s.step === 0; s = ap(s, F.confirm(m, s)); return ok && s.step === 1; });
+  T("FL-03+ 틀리게 옮긴 뒤 확정해도 배치가 그대로다", () => { const m = job("d2-03"); let s = F.start(m); s = ap(s, F.ride(m, s, 1)); const before = vAscii(m.ch, s.v); s = ap(s, F.confirm(m, s)); return before === "E4 G4 C5" && s.tries === 1 && s.step === 0 && vAscii(m.ch, s.v) === before; });
+  T("FL-03+ 2차에 고쳐 준 배치는 가장 적게 옮긴 답이다", () => { const m = job("d2-04"); let s = F.start(m); s = ap(s, F.confirm(m, s)); s = ap(s, F.confirm(m, s)); return s.fixed && vAscii(m.ch, s.v) === "C5 E5 G5"; });
+  T("FL-05+ 밑음 두기: 밑음이 다른 층으로 가면 맞지 않다", () => { const m = job("d6-03"), s = F.start(m); return right(m, ap(s, { v: byMember(voicing(m.ch, "C4 G4 E5")) })) && !right(m, ap(s, { v: byMember(voicing(m.ch, "C5 E5 G5")) })) && !right(m, ap(s, { v: byMember(voicing(m.ch, "E4 G4 C5")) })) && !right(m, s); });
+  T("FL-06+ 섞인 줄은 맞히면 낮은 순서로 다시 선다", () => { const m = job("d0-03"); let s = F.start(m); const w0 = show(m, s); s = ap(s, { sel: inversion(m.ch, s.v) }); s = ap(s, F.confirm(m, s)); const w1 = show(m, s); return !w0.sorted && w1.sorted && w1.lamp && JSON.stringify(w1.col) === "[2,0,1]"; });
+  T("FL-07+ 밑음을 묻는 동안 밑음 자리의 불이 꺼져 있다", () => { const a = job("d1-06"), b = job("d1-03"); let s = F.start(b); s = ap(s, { sel: 0 }); s = ap(s, F.confirm(b, s)); return show(a, F.start(a)).lamp === false && b.steps[s.step].want === "bass" && show(b, s).lamp === false; });
+  T("GN-02+ 함정 탐정의 답이 8.3절의 표와 같다", () => ["d6-01", "d6-02", "d6-05", "d6-06", "d6-08"].map((id) => job(id).steps[0].answer).join("") === "01001");
+  return { pass, total, fails };
+}
+
+function runProductTests(options = {}) {
+  const fails = [], results = []; let pass = 0, total = 0;
+  const extra = plusTest();
+  const T = (name, fn) => {
+    const id = name.split(" ")[0];
+    if (options.engineOnly && /^(ST|SV|CT)-/.test(id)) return;
+    total++; let ok = false, detail = "";
+    try { ok = fn() === true && !extra.fails.some((f) => f.startsWith(id + "+")); }
+    catch (error) { detail = error.message; }
+    results.push({ id, name, pass: ok, detail });
+    if (ok) pass++; else fails.push(name + (detail ? " — " + detail : ""));
+  };
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b), names = (id) => chord(id).tones.map(pcAscii).join(" ");
+  const all = DAYS.concat([SPIKE]).flatMap((d) => d.jobs.map((j) => [j, d]));
+  const walk = (j, d, wrong) => {                                                 // 화면 없이 운행 하나를 끝까지: 바른 길 또는 단계마다 틀리는 길
+    const m = build(j, d); let s = F.start(m), g = 0; const ap = (p) => { if (p) s = Object.assign({}, s, p); };
+    while (m.steps[s.step].kind !== "listen" && g++ < 8) {
+      const st = m.steps[s.step], a = st.kind === "pick" ? (st.want === "root" ? 0 : inversion(m.ch, s.v)) : st.answer;
+      for (let t = 0; t < (wrong ? (st.kind === "judge" ? 1 : 2) : 0); t++) { if (st.kind === "pick") ap({ sel: m.ch.tones.map((_, k) => k).find((k) => k !== a && !s.off.includes(k)) }); else if (st.choices) ap({ choice: st.choices.map((_, i) => i).find((i) => i !== a && !s.off.includes(i)) }); ap(F.confirm(m, s)); }
+      if (st.kind === "pick") ap({ sel: a }); else if (st.kind === "ride") { if (!right(m, s)) ap({ v: fixV(m, s), moved: 1 }); } else ap({ choice: a });
+      ap(F.confirm(m, s));
+    }
+    return m.steps[s.step].kind === "listen" && F.result(s);
+  };
+  T("TH-01 자연음 반음값은 장음계 공식의 누적합", () => same(NAT, [0, 2, 4, 5, 7, 9, 11]) && OCT === 12 && STEPS === 7 && M3 === 4 && m3 === 3);
+  T("TH-02 주파수 공식", () => hz(69) === 440 && Math.abs(hz(60) - 261.6256) < 1e-3 && Math.abs(hz(81) - 880) < 1e-9);
+  T("TH-03 구성음 C, Am, G7, CM7", () => names("C") === "C E G" && names("Am") === "A C E" && names("G7") === "G B D F" && names("CM7") === "C E G B");
+  T("TH-04 글자는 한 칸씩 건넌다(C♯M7의 E♯, B♯)", () => names("C#M7") === "C# E# G# B#" && names("Bbm7") === "Bb Db F Ab" && names("D") === "D F# A");
+  T("TH-05 오선 자리는 글자와 옥타브로만", () => pos(note("C4")) === 28 && pos(note("Cb4")) === 28 && midi(note("Cb4")) === 59 && FRAME.hi - FRAME.lo === 14);
+  T("TH-06 초안: CM7을 올리면 E G B C, G B C E, B C E G", () => { const ch = chord("CM7"); let v = byMember(voicing(ch, "C4 E4 G4 B4")); const out = []; for (let i = 0; i < 5; i++) { out.push(vAscii(ch, v) + "=" + symbolOf(ch, v)); v = rideUp(ch, v); } return same(out, ["C4 E4 G4 B4=CM7", "E4 G4 B4 C5=CM7/E", "G4 B4 C5 E5=CM7/G", "B4 C5 E5 G5=CM7/B", "C5 E5 G5 B5=CM7"]); });
+  T("TH-07 초안: C를 올리면 E G C, G C E, C E G", () => { const ch = chord("C"); let v = byMember(voicing(ch, "C4 E4 G4")); const out = []; for (let i = 0; i < 4; i++) { out.push(vAscii(ch, v)); v = rideUp(ch, v); } return same(out, ["C4 E4 G4", "E4 G4 C5", "G4 C5 E5", "C5 E5 G5"]); });
+  T("TH-08 내리기는 올리기를 되돌린다", () => ["C", "Am", "G7", "FM7", "Eb"].every((id) => { const ch = chord(id), v = closeV(ch, 0, 14); return sameV(rideDown(ch, rideUp(ch, v)), v) && sameV(rideUp(ch, rideDown(ch, v)), v); }));
+  T("TH-09 구성음 수만큼 올리면 모두 한 옥타브 위", () => ["C", "Dm", "CM7", "G7"].every((id) => { const ch = chord(id), v = closeV(ch, 0, 14); let w = v; for (let i = 0; i < ch.n; i++) w = rideUp(ch, w); return w.every((x, i) => x.o === v[i].o + 1) && inversion(ch, w) === 0; }));
+  T("TH-10 자리바꿈은 가장 낮은 음으로(E3 C4 G4, E3 G4 C5)", () => { const ch = chord("C"); return inversion(ch, voicing(ch, "E3 C4 G4")) === 1 && inversion(ch, voicing(ch, "E3 G4 C5")) === 1 && inversion(ch, voicing(ch, "G4 C5 E3")) === 1; });
+  T("TH-11 겹친 음이 있어도 밑음 기준", () => { const ch = chord("C"); return inversion(ch, voicing(ch, "E3 C4 G4 C5")) === 1 && inversion(ch, voicing(ch, "G3 C4 E4 G4")) === 2; });
+  T("TH-12 슬래시: C/E 자리바꿈, C/D 화음 밖, CM7/B 셋째", () => slash("C/E").kind === "inversion" && slash("C/D").kind === "outside" && slash("C").kind === "root" && slash("CM7/B").k === 3);
+  T("TH-13 기본 위치는 3도로만, 자리바꿈에는 틈", () => { const c = chord("C"), m7 = chord("CM7"); return same(gaps(c, voicing(c, "C4 E4 G4")), [3, 3]) && same(gaps(c, voicing(c, "E4 G4 C5")), [3, 4]) && same(gaps(m7, voicing(m7, "E4 G4 B4 C5")), [3, 3, 2]); });
+  T("TH-14 글자만으로 근음 찾기", () => rootLetter([2, 4, 0]) === 0 && rootLetter([5, 0, 3]) === 3 && rootLetter([4, 6, 0, 2]) === 0);
+  T("TH-15 옥타브를 어떻게 놓아도 근음은 그대로", () => ["C", "Am", "G7", "Dm7"].every((id) => { const ch = chord(id); return reach(ch, closeV(ch, 0), true).every((x) => rootLetter(x.v.map((y) => ch.tones[y.k].l)) === ch.root.l && inFrame(ch, x.v)); }));
+  T("TH-16 무대 안의 밀집 배치 수: C 5, CM7 6", () => reach(chord("C"), closeV(chord("C"), 0), false).length === 5 && reach(chord("CM7"), closeV(chord("CM7"), 0), false).length === 6);
+  T("FL-01 조사", () => josa("C", "은/는") === "C는" && josa("F♯", "은/는") === "F♯은" && ro("B♭") === "B♭으로" && ye("첫째 자리바꿈") === "첫째 자리바꿈이에요" && ye("기본 위치") === "기본 위치예요" && josa("CM7", "을/를") === "CM7을" && raseo("B♭") === "B♭이라서" && raseo("C") === "C라서");
+  T("GN-01 씨앗 73건이 모두 출제 검사를 통과한다", () => all.length === 73 && all.every(([j, d]) => audit(j, d).length === 0 && build(j,d).steps.filter(st => st.kind === "choose").every(st => st.choices.length === (j.trap ? 4 : chord(j.chord).n) && !(chord(j.chord).n === 3 && st.choices.some(c => c.k === 3)))));
+  T("GN-02 운행일별 운행 수 7 8 8 8 8 8 8 8", () => same(DAYS.map((d) => d.jobs.length), [7, 8, 8, 8, 8, 8, 8, 8]) && DAYS.every((d) => d.jobs[d.jobs.length - 1].final));
+  T("FL-02 바른 길: 모든 운행이 ●로 끝난다", () => all.every(([j, d]) => walk(j, d, false) === "full"));
+  T("FL-03 틀린 길: 두 번 틀리면 고쳐 주고 ◐로 끝난다", () => all.every(([j, d]) => walk(j, d, true) === "half"));
+  T("FL-04 고르지 않은 확정은 채점하지 않는다", () => { const m = build(DAYS[1].jobs[2], DAYS[1]), s = F.start(m), p = F.confirm(m, s); return p.msg.code === "empty" && p.tries === undefined; });
+  T("FL-05 무대 밖으로는 옮기지 않는다", () => { const m = build(DAYS[2].jobs[0], DAYS[2]), p = F.ride(m, F.start(m), -1); return p.v === undefined && p.msg.code === "edge"; });
+  T("FL-06 섞인 줄에서는 밑음 자리의 불을 끈다", () => { const m = build(DAYS[0].jobs[2], DAYS[0]), w = show(m, F.start(m)); return !w.sorted && !w.lamp && same(w.col, [1, 2, 0]); });
+  T("FL-07 근음을 묻는 동안 구성음 이름을 가린다", () => { const m = build(DAYS[1].jobs[2], DAYS[1]); return show(m, F.start(m)).roles === false; });
+  T("FL-08 이름표 수리: Am/E는 밑음이 틀림, 바른 이름표 Am/C", () => { const m = build(DAYS[7].jobs[0], DAYS[7]); return m.label === "Am/E" && m.steps[0].answer === 1 && m.steps[1].choices[m.steps[1].answer].label === "Am/C"; });
+  T("FL-09 함정 보기: F/C의 보기에 C/F와 C가 있다", () => same(build(DAYS[5].jobs[4], DAYS[5]).steps[0].choices.map((c) => c.label).sort(), ["C", "C/F", "F", "F/C"]));
+  T("AU-01 듣기의 예약표: 낮은 음부터 0.5초 간격, 그다음 함께", () => { const ch = chord("C"), p = planListen(ch, byMember(voicing(ch, "E4 G4 C5"))); return same(p.ev.map((e) => [e.midi, Math.round(e.at * 100) / 100]), [[64, 0], [67, 0.5], [72, 1], [64, 1.6], [67, 1.6], [72, 1.6]]); });
+  T("AU-02 옮긴 음의 소리: 옛 높이, 새 높이", () => same(planRide(chord("C"), { k: 0, from: 4, to: 5 }).map((e) => e.midi), [60, 72]));
+  T("AU-03 두 손 패드: 밑음만, 윗음만", () => { const ch = chord("CM7"), v = byMember(voicing(ch, "E4 G4 B4 C5")); return same(planPad(ch, v, false).map((e) => e.midi), [64]) && same(planPad(ch, v, true).map((e) => e.midi), [67, 71, 72]); });
+  T("GN-03 모든 화음의 모든 자리 배치가 무대 안", () => {
+    const ids = [...new Set(DAYS.flatMap(d => d.jobs.map(j => j.chord)))];
+    return ids.length === 14 && ids.every(id => { const ch = chord(id); return ch.tones.every((_,k) => inFrame(ch, closeV(ch,k))); });
+  });
+  T("GN-04 만들기의 최소 조작과 도움 수", () => {
+    const jobs = DAYS.flatMap(d => d.jobs.map(j => [j,d]));
+    return jobs.filter(([j]) => j.help).length === 12 && jobs.filter(([j]) => j.ask === "make").every(([j,d]) => {
+      const m = build(j,d), r = reach(m.ch,m.v0,m.free).filter(x => right(m, Object.assign(F.start(m), {v:x.v})));
+      return r.length > 0 && Math.min(...r.map(x => x.d)) >= 1 && Math.min(...r.map(x => x.d)) <= 3;
+    });
+  });
+  T("FL-10 모든 틀린 응답에 까닭이 있음", () => collectProductTexts().wrong.length === 231 && collectProductTexts().wrong.every(x => typeof x.code === "string" && x.code.length > 0 && typeof x.text === "string" && x.text.length > 0));
+  T("FL-11 금지 문구와 문장 길이", () => collectProductTexts().texts.every(t => !/정답|오답|틀렸어요|병행조/.test(t) && Array.from(t).length <= 44));
+  T("AU-04 실제 예약 함수의 관측", () => auditAudioReservation());
+  T("ST-01 허용된 순방향 전이", () => all.every(([j,d]) => {
+    const m = build(j,d); let s = F.start(m);
+    for (let guard=0; guard<10 && m.steps[s.step].kind !== "listen"; guard++) {
+      const old=s.step, st=m.steps[s.step];
+      if (st.kind === "pick") s=Object.assign({},s,F.tap(m,s,st.want === "root" ? 0 : inversion(m.ch,s.v)));
+      else if (st.kind === "ride") s=Object.assign({},s,{v:fixV(m,s)});
+      else s=Object.assign({},s,F.pick(m,s,st.answer));
+      const p=F.confirm(m,s); if (p.step !== old+1 || p.done) return false; s=Object.assign({},s,p);
+    }
+    return m.steps[s.step].kind === "listen" && F.confirm(m,s).done === true;
+  }));
+  T("ST-02 상태 갱신의 단일 통로", () => {
+    const code=productRuntimeSource();
+    return /Object\.assign\(App,\s*patch\)/.test(setState.toString()) && !/\bApp\.\w+\s*=(?!=)/.test(code);
+  });
+  T("ST-03 같은 운행의 음 노드 보존", () => auditTokenIdentity());
+  T("ST-04 진행 위치의 저장 복원", () => auditProductStorage("active"));
+  T("SV-01 저장 v1 왕복", () => auditProductStorage("roundtrip"));
+  T("SV-02 손상과 미래 버전 원문 보존", () => auditProductStorage("corrupt"));
+  T("SV-03 저장 거부시 메모리 폴백", () => auditProductStorage("fallback"));
+  T("SV-04 까닭과 카드 저장 왕복", () => auditProductStorage("records"));
+  T("CT-01 표시가 엔진 출력과 같음", () => auditRenderedTheory());
+  T("CT-02 낱말 전환과 조사", () => withWords({bassWord:"베이스",invWord:"전위"}, () => {
+    const m=build(DAYS[2].jobs[0],DAYS[2]), s=F.start(m), text=say("good",summary(m,s.v)).text;
+    return translateWords("밑음은 지금 가장 낮은 음이에요.").startsWith("베이스는") && /전위|기본위치/.test(text) && !/자리바꿈|밑음/.test(text) && josa("베이스","은/는")==="베이스는";
+  }));
+  T("CT-03 이론과 주파수의 계산식", () => {
+    const code=productRuntimeSource();
+    return !/const\s+(?:CHORD_TABLE|INVERSION_TABLE|FREQ_TABLE|FREQUENCIES)\b/.test(code) && /Math\.pow/.test(hz.toString()) && /MAJOR\.slice/.test(code) && /semi\s*\+=/.test(chord.toString());
+  });
+  return { pass, total, fails, results };
+}
+
+
+
+// SOURCE ui-audit.js
+// Product UI regression driver. Every answer and move uses the rendered controls.
+let uiAuditRunning = false;
+async function startUiAudit(button) {
+  if (uiAuditRunning) return;
+  uiAuditRunning = true;
+  const output = document.getElementById("uiAuditResults");
+  const report = { started: new Date().toISOString(), source: "isolated srcdoc product", layoutSetup: "openJob fixture entry", paths: [], layouts: [], progression: [], failures: [], errors: [], clicks: 0, keyboard: "NOT_RUN", devices: "NOT_RUN" };
+  const update = message => { if (output) output.textContent = message; };
+  if (button) button.disabled = true;
+  let frame;
+  try {
+    const page = document.documentElement.cloneNode(true);
+    page.querySelectorAll("iframe[data-ui-audit]").forEach(node => node.remove());
+    const bootstrap = document.createElement("script");
+    bootstrap.textContent = 'const auditMemory = new Map([["ces_save_v1",JSON.stringify({version:1,settings:{muted:true,motion:"reduced"}})]]);Object.defineProperty(window,"localStorage",{configurable:true,value:{getItem:k=>auditMemory.get(k)||null,setItem:(k,v)=>auditMemory.set(k,String(v)),removeItem:k=>auditMemory.delete(k)}});Object.defineProperty(window,"AudioContext",{configurable:true,value:undefined});Object.defineProperty(window,"webkitAudioContext",{configurable:true,value:undefined});window.__auditErrors=[];window.addEventListener("error",e=>window.__auditErrors.push(e.message));';
+    page.querySelector("head").prepend(bootstrap);
+    const bridge = document.createElement("script");
+    bridge.textContent = 'window.__auditBridge={order,midiAt,inFrame,sameV,vAscii,right,fixV,musicTextOf,translateWords,summary,planListen};';
+    page.querySelector("body").append(bridge);
+    frame = document.createElement("iframe");
+    frame.dataset.uiAudit = "true";
+    frame.title = "제품 자동 검사 격리 화면";
+    frame.setAttribute("aria-hidden", "true");
+    frame.style.cssText = "position:fixed;left:-12000px;top:0;width:390px;height:844px;border:0;pointer-events:none";
+    const ready = new Promise((resolve, reject) => { frame.onload = resolve; frame.onerror = () => reject(new Error("검사 화면을 열지 못했어요")); });
+    frame.srcdoc = "<!DOCTYPE html>" + page.outerHTML;
+    document.body.append(frame);
+    await ready;
+    const win = frame.contentWindow, doc = frame.contentDocument;
+    if (!win.__spike || !win.__auditBridge) throw new Error("제품 검사 인터페이스를 열지 못했어요");
+    const api = win.__spike, theory = win.__auditBridge;
+    const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const require = (condition, detail) => { if (!condition) throw new Error(detail); };
+    function press(selector) {
+      const node = doc.querySelector(selector);
+      require(node && !node.disabled && node.getBoundingClientRect().width > 0, "누를 수 없는 단추 " + selector);
+      node.click(); report.clicks++;
+    }
+    async function openJobHash(day, index) {
+      const hash = "#" + day.id + "-" + (index + 1);
+      if (win.location.hash === hash) win.location.hash = "#test";
+      await pause(0);
+      win.location.hash = hash;
+      const deadline=Date.now()+5000;
+      while(Date.now()<deadline) {
+        await pause(16);
+        if (api.App.screen === "run" && api.App.m.id === day.jobs[index].id && api.App.s.step === 0) return;
+      }
+      throw new Error("운행 진입 실패 " + hash + " 실제 " + JSON.stringify({hash:win.location.hash,screen:api.App.screen,id:api.App.m?.id,step:api.App.s?.step}));
+    }
+    function snapshotNodes() { return Array.from(doc.querySelectorAll("#tokens .tok")); }
+    function checkNodes(nodes) {
+      const after=snapshotNodes();
+      require(after.length===nodes.length && after.every((node,i)=>node===nodes[i]), "같은 운행에서 음 노드가 바뀌었어요");
+    }
+    function checkText() {
+      const {m,s}=api.App, view=api.currentView();
+      for (const node of snapshotNodes()) {
+        const k=+node.dataset.k;
+        const expected=m.ch.tones[k];
+        const spelling="CDEFGAB"[expected.l]+["𝄫","♭","","♯","𝄪"][expected.a+2];
+        require(theory.musicTextOf(node.firstChild)===spelling,"음 표기가 달라요 "+m.id);
+      }
+      const actual=theory.musicTextOf(doc.querySelector("#readout"));
+      require(actual===theory.translateWords(s.msg.text),"판독 문구가 달라요 "+m.id);
+      require(theory.musicTextOf(doc.querySelector("#plateName"))===(view.plate||"–"),"이름표가 달라요 "+m.id);
+    }
+    function routeToAnswer(m,s) {
+      const key=v=>v.map(x=>x.k+":"+x.o).join(",");
+      const queue=[{v:s.v,path:[]}], seen=new Set([key(s.v)]);
+      for(let head=0;head<queue.length;head++) {
+        const item=queue[head];
+        if(theory.right(m,Object.assign({},s,{v:item.v}))) return item.path;
+        const order=theory.order(m.ch,item.v);
+        const moves=m.free?item.v.flatMap((_,k)=>[{k,d:1},{k,d:-1}]):[{k:order[0],d:1},{k:order[order.length-1],d:-1}];
+        for(const move of moves) {
+          const v=item.v.map((x,i)=>({k:x.k,o:x.o+(i===move.k?move.d:0)}));
+          const id=key(v);
+          if(!theory.inFrame(m.ch,v)||seen.has(id))continue;
+          seen.add(id);queue.push({v,path:item.path.concat(move)});
+        }
+      }
+      throw new Error("허용 조작으로 답에 닿지 못했어요 "+m.id);
+    }
+    function moveToAnswer(m,s) {
+      for(const move of routeToAnswer(m,s)) {
+        if(m.free && api.App.s.sel!==move.k) press('#tokens .tok[data-k="'+move.k+'"]');
+        press(move.d>0?"#btnUp":"#btnDown");
+      }
+    }
+    function chooseAnswer(m,s,wrong) {
+      const step=m.steps[s.step];
+      if(step.kind==="pick") {
+        const answer=step.want==="root"?0:api.currentView().bass;
+        const choice=wrong?m.ch.tones.map((_,k)=>k).find(k=>k!==answer&&!s.off.includes(k)):answer;
+        require(choice!==undefined,"다른 음이 없어요 "+m.id);
+        press('#tokens .tok[data-k="'+choice+'"]');
+      } else if(step.kind==="ride") {
+        if(!wrong) moveToAnswer(m,s);
+        else if(theory.right(m,s)) {
+          const before=theory.vAscii(m.ch,s.v);press("#btnReset");
+          require(theory.vAscii(m.ch,api.App.s.v)!==before||!theory.right(m,api.App.s),"틀린 만들기를 구성할 수 없어요");
+        }
+      } else {
+        const choice=wrong?step.choices.map((_,i)=>i).find(i=>i!==step.answer&&!s.off.includes(i)):step.answer;
+        require(choice!==undefined,"다른 보기가 없어요 "+m.id);
+        press('#chips .chip[data-id="'+choice+'"]');
+      }
+    }
+    function solveCurrent(wrong) {
+      const m=api.App.m, nodes=snapshotNodes();
+      for(let guard=0;guard<12 && m.steps[api.App.s.step].kind!=="listen";guard++) {
+        const start=api.App.s.step, step=m.steps[start];
+        if(wrong) {
+          const attempts=step.kind==="judge"?1:2;
+          for(let attempt=0;attempt<attempts;attempt++) {
+            chooseAnswer(m,api.App.s,true);press("#btnOk");checkNodes(nodes);checkText();
+            require(api.App.s.step===start,"교정 전에 단계가 이동했어요 "+m.id);
+          }
+          if(step.kind!=="judge") require(api.App.s.fixed,"2차 교정이 없어요 "+m.id);
+        }
+        chooseAnswer(m,api.App.s,false);press("#btnOk");checkNodes(nodes);checkText();
+        require(api.App.s.step===start+1,"확정 후 다음 단계가 열리지 않아요 "+m.id);
+      }
+      require(m.steps[api.App.s.step].kind==="listen","듣기 단계에 닿지 못했어요 "+m.id);
+      require(api.F.result(api.App.s)===(wrong?"half":"full"),"운행 기록이 달라요 "+m.id);
+    }
+    function inspectLayout(width,height) {
+      const errors=[], rect=id=>doc.getElementById(id).getBoundingClientRect();
+      const near=(a,b)=>Math.abs(a-b)<1;
+      if(doc.documentElement.scrollWidth>width+1||doc.documentElement.scrollHeight>height+1)errors.push("페이지 넘침");
+      for(const id of ["hud","card","stage","readout","controls"]) {
+        const r=rect(id);if(r.left<-.5||r.top<-.5||r.right>width+.5||r.bottom>height+.5)errors.push(id+" 경계");
+      }
+      const nodes=snapshotNodes(), stage=rect("stage");
+      for(const node of nodes) {
+        const r=node.getBoundingClientRect();
+        if(r.width<43.5||r.height<43.5)errors.push("음 터치 크기");
+        if(r.left<stage.left||r.right>stage.right||r.top<stage.top||r.bottom>stage.bottom-46)errors.push("음 무대 경계");
+      }
+      for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++) {
+        const a=nodes[i].getBoundingClientRect(),b=nodes[j].getBoundingClientRect();
+        if(a.left<b.right-.5&&a.right>b.left+.5&&a.top<b.bottom-.5&&a.bottom>b.top+.5)errors.push("음 겹침");
+      }
+      for(const node of doc.querySelectorAll("#controls button,#hud button")) {
+        const r=node.getBoundingClientRect();if(!r.width||!r.height)continue;
+        if(r.width<43.5||r.height<43.5)errors.push("단추 터치 크기 "+node.id);
+      }
+      if(!near(rect("hud").height,44)||!near(rect("readout").height,40)||!near(rect("controls").height,104))errors.push("고정 줄 높이");
+      for(const id of ["askText","readout"]) {
+        const node=doc.getElementById(id),style=win.getComputedStyle(node),r=node.getBoundingClientRect();
+        if(node.scrollHeight>r.height+1)errors.push(id+" 잘림");
+        if(parseFloat(style.fontSize)<12)errors.push(id+" 글자 크기");
+      }
+      return [...new Set(errors)];
+    }
+    update("운행 63건의 바른 길과 교정 경로를 확인하고 있어요.");
+    for(const wrong of [false,true])for(const day of api.DAYS)for(let index=0;index<day.jobs.length;index++) {
+      const id=day.jobs[index].id;
+      try {await openJobHash(day,index);solveCurrent(wrong);report.paths.push({id,wrong,pass:true});}
+      catch(error){report.paths.push({id,wrong,pass:false,error:error.message});report.failures.push({section:"path",id,wrong,error:error.message});}
+      if(report.paths.length%12===0){update("운행 경로 "+report.paths.length+"/126 확인 중");await pause(0);}
+    }
+    const sizes=[[320,545],[320,568],[360,600],[360,640],[390,664],[390,844],[430,932],[800,600]];
+    for(const [width,height] of sizes) {
+      frame.style.width=width+"px";frame.style.height=height+"px";await pause(90);
+      for(const day of api.DAYS)for(let index=0;index<day.jobs.length;index++) {
+        let errors=[];
+        try {api.openJob(day,index,[]);errors=inspectLayout(width,height);}
+        catch(error){errors=[error.message];}
+        const row={id:day.jobs[index].id,width,height,pass:errors.length===0,errors};
+        report.layouts.push(row);if(errors.length)report.failures.push({section:"layout",...row});
+      }
+      update("화면 조합 "+report.layouts.length+"/504 확인 중");
+    }
+    frame.style.width="390px";frame.style.height="844px";await pause(90);
+    win.location.hash="";
+    const titleDeadline=Date.now()+5000;
+    while(api.App.screen!=="title"&&Date.now()<titleDeadline)await pause(16);
+    require(api.App.screen==="title","타이틀 진입 실패");
+    press('[data-action="nav"][data-screen="map"]');
+    for(const day of api.DAYS) {
+      press('[data-action="day"][data-day="'+day.id+'"]');
+      for(let guard=0;guard<40 && api.App.screen!=="close";guard++) {
+        if(api.App.screen==="scene") {press('[data-action="scene-next"]');continue;}
+        const soundNo=doc.querySelector('[data-sound-check="no"]');if(soundNo&&soundNo.getBoundingClientRect().width>0){press('[data-sound-check="no"]');continue;}
+        require(api.App.screen==="run","진도 화면 중단 "+api.App.screen);
+        const id=api.App.m.id;solveCurrent(false);press("#btnOk");
+        report.progression.push({id,pass:true});
+      }
+      require(api.App.screen==="close","마감 실패 "+day.id);
+      require(api.saveData.days[day.id]?.passed,"운행일 통과 기록 실패 "+day.id);
+      require(api.saveData.days[day.id].best===day.jobs.length,"최고 기록 실패 "+day.id);
+      press('[data-action="nav"][data-screen="map"]');
+    }
+    require(report.progression.length===63,"정규 진도 합계가 달라요");
+    require(api.saveData.stats.pads===0,"패드 없이 완주 기록이 달라요");
+    press('[data-action="nav"][data-screen="title"]');
+    const storedBefore=JSON.stringify(api.saveData);
+    press('[data-action="lab"]');press("#btnUp");press("#homeBtn");
+    require(JSON.stringify(api.saveData)===storedBefore,"실험실에서 기록이 바뀌었어요");
+    report.lab={pass:true,recordUnchanged:true};
+    report.errors=win.__auditErrors.slice();
+    if(report.errors.length)report.failures.push({section:"console",errors:report.errors});
+  } catch(error) {report.failures.push({section:"driver",error:error.message});}
+  finally {
+    if(frame)frame.remove();
+    report.finished=new Date().toISOString();
+    report.pass=report.failures.length===0&&report.paths.length===126&&report.layouts.length===504&&report.progression.length===63;
+    window.__uiAuditReport=report;
+    update(JSON.stringify(report,null,2));
+    if(button)button.disabled=false;
+    uiAuditRunning=false;
+  }
+  return report;
+}
+
+
+// SOURCE boot.js
+// ═══ 11 BOOT ═══ 제품 진입점 and development hashes.
+function boot() {
+  const hash = location.hash.slice(1);
+  const match = /^(d[0-7]|sp)(?:-(\d+))?$/.exec(hash);
+  if (match) {
+    const day = match[1] === "sp" ? SPIKE : DAYS.find(d => d.id === match[1]);
+    const index = Math.min(day.jobs.length, Math.max(1, +(match[2] || 1))) - 1;
+    setState({ debug: true, closeData: null });
+    openJob(day, index, [], freshSession());
+  } else if (hash === "test") goScreen("test");
+  else if (hash === "lab") enterLab();
+  else goScreen("title");
+}
+setupInput();
+setupScreenInputs();
+const firstModel = build(DAYS[0].jobs[0], DAYS[0]);
+setState({ m: firstModel, s: F.start(firstModel) });
+window.__tests = selfTest();
+boot();
+window.addEventListener("hashchange", boot);
+window.__spike = {
+  App, F, build, show, setState, openJob, layout: () => G, DAYS, SPIKE,
+  Store, startDay, resumeDay, nextJob, goScreen, enterLab, currentView,
+  get saveData() { return saveData; }
+};
+window.addEventListener("error", event => {
+  console.error(event.message);
+  if ($("screenPanel")) {
+    stopRun(false);
+    $("screenPanel").hidden = false;
+    $("screenPanel").innerHTML = '<h1>문제가 생겼어요</h1><p>다시 열어 이어서 해 보세요.</p><button type="button" onclick="location.reload()">새로고침</button>';
+  }
+}, { once: true });
+
+</script>
+</body>
+</html>
